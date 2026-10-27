@@ -26,11 +26,20 @@
   ></a>
 </div>
 
-# Carte Imprimantes 3D
+# Cartes Imprimantes
 
-**Une carte Lovelace pour suivre vos imprimantes 3D dans Home Assistant** : état, impression en cours, caméra, températures, commandes et statistiques. Elle a le style des cartes MyElectricalData new ([Carte Enedis Linky New](https://github.com/Marlboro62/content-card-linky-new)) et des [Cartes Serveur HA](https://github.com/Marlboro62/serveur-ha-card) : thème bleu nuit, version claire, ou thème Home Assistant.
+**Deux cartes Lovelace indépendantes, dans un seul fichier**, pour suivre vos imprimantes dans Home Assistant :
+
+| Type | Carte |
+| --- | --- |
+| `custom:printers-card` | **Imprimantes 3D** : état, impression en cours, caméra en direct, températures, commandes et statistiques |
+| `custom:printers-office-card` | **Imprimantes de bureau** *(bêta)* : état et alertes (bourrage, plus de papier…), encre ou toner, pièces d'usure, compteurs de pages |
+
+Elles ont le style des cartes MyElectricalData new ([Carte Enedis Linky New](https://github.com/Marlboro62/content-card-linky-new)) et des [Cartes Serveur HA](https://github.com/Marlboro62/serveur-ha-card) : thème bleu nuit, version claire, ou thème Home Assistant.
 
 **Aucune dépendance** : pas de button-card ni de card-mod. Les imprimantes sont **détectées automatiquement**, une par onglet, et chaque élément sans capteur est simplement masqué.
+
+### Imprimantes 3D
 
 | Impression en cours | En pause | Erreur |
 | --- | --- | --- |
@@ -40,11 +49,19 @@
 | --- | --- | --- |
 | ![Impression terminée](images/terminee.png) | ![Seconde imprimante](images/deux-imprimantes.png) | ![Clair](images/impression-clair.png) |
 
+### Imprimantes de bureau
+
+| Laser couleur | Encre basse | Bourrage | Clair |
+| --- | --- | --- | --- |
+| ![Imprimantes de bureau](images/bureau.png) | ![Encre basse](images/bureau-encre-basse.png) | ![Bourrage](images/bureau-bourrage.png) | ![Clair](images/bureau-clair.png) |
+
 *Aperçus réalisés avec la démo et des valeurs fictives (imprimantes, fichiers et images de caméra inventés).*
 
-**[▶ Essayer la démo en ligne](https://marlboro62.github.io/printers/docs/demo.html)** : une ou deux imprimantes, en impression, en pause, terminée, en erreur, prête ou éteinte, en sombre ou clair, sur téléphone ou PC.
+**[▶ Essayer la démo en ligne](https://marlboro62.github.io/printers/docs/demo.html)** : les deux cartes, imprimantes 3D en impression, en pause, terminée, en erreur, prête ou éteinte, imprimantes de bureau normales, avec encre basse, bourrage ou en veille, en sombre ou clair, sur téléphone ou PC.
 
 ## Intégrations reconnues
+
+### Imprimantes 3D
 
 | Intégration | Où la trouver | État |
 | --- | --- | --- |
@@ -52,6 +69,14 @@
 | **OctoPrint** | intégrée à Home Assistant | prévue, non testée |
 | **PrusaLink** (MK4, Mini, XL, Core One) | intégrée à Home Assistant | prévue, non testée |
 | **Bambu Lab** | HACS, [ha-bambulab](https://github.com/greghesp/ha-bambulab) | prévue, non testée |
+
+### Imprimantes de bureau
+
+| Intégration | Imprimantes | État |
+| --- | --- | --- |
+| **Internet Printing Protocol (IPP)**, intégrée à Home Assistant | la plupart des imprimantes réseau : HP, Epson, Canon, Brother, Kyocera, imprimantes partagées par CUPS | prévue, non testée |
+| **Brother**, intégrée à Home Assistant | Brother laser et jet d'encre (toner, tambour, unité de fixation, courroie, compteurs) | prévue, non testée |
+| Intégrations HACS qui donnent les niveaux d'encre en % (Epson Workforce, HP Printer…) | | reconnues d'après le nom des capteurs |
 
 Si votre intégration n'est pas bien reconnue, ouvrez une [issue](https://github.com/Marlboro62/printers/issues) avec la liste des entités de l'imprimante.
 
@@ -61,7 +86,9 @@ Si votre intégration n'est pas bien reconnue, ouvrez une [issue](https://github
 
 1. Dans HACS, menu **⋮** → **Dépôts personnalisés**.
 2. Ajoutez `https://github.com/Marlboro62/printers` avec le type **Tableau de bord** (Dashboard).
-3. Cherchez **Carte Imprimantes 3D**, installez, puis rechargez la page (Ctrl+F5).
+3. Cherchez **Cartes Imprimantes**, installez, puis rechargez la page (Ctrl+F5).
+
+> La carte Imprimantes de bureau est en bêta : activez **Afficher les versions bêta** dans la fenêtre de téléchargement de HACS.
 
 ### Manuellement
 
@@ -69,7 +96,7 @@ Si votre intégration n'est pas bien reconnue, ouvrez une [issue](https://github
 2. **Paramètres → Tableaux de bord → ⋮ → Ressources → Ajouter une ressource** : URL `/local/printers-card.js`, type **Module JavaScript**.
 3. Rechargez la page (Ctrl+F5).
 
-## Utilisation
+## Carte Imprimantes 3D — `custom:printers-card`
 
 ```yaml
 type: custom:printers-card
@@ -115,6 +142,35 @@ printers:
 ```
 
 L'éditeur visuel remplit `printers` pour vous : choisissez les appareils dans la liste.
+
+## Carte Imprimantes de bureau — `custom:printers-office-card`
+
+```yaml
+type: custom:printers-office-card
+```
+
+La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprimantes trouvées par les intégrations IPP et Brother.
+
+### Ce qu'elle affiche
+
+- **Onglets** : une imprimante par onglet, avec un point de couleur (prête, en impression, à surveiller, en erreur). Sans onglet retenu, la carte ouvre l'imprimante qui demande votre attention.
+- **État** : prête, en veille, impression en cours, arrêtée, erreur, hors ligne, avec la raison en clair : **plus de papier, bourrage papier, capot ouvert, consommable vide ou bas**. La carte prend une bordure rouge en cas d'erreur.
+- **Encre ou toner** : une jauge par cartouche, à sa couleur (noir, cyan, magenta, jaune, couleur, noir photo…), avec « Bas » ou « À remplacer » sous le seuil d'alerte (15 % par défaut, ou le seuil donné par l'imprimante).
+- **Pièces d'usure** (Brother) : tambour, unité de fixation, courroie, laser, kit papier, avec leur durée de vie restante.
+- **Compteurs** : pages imprimées, noir et blanc, couleur, recto verso, et durée depuis le dernier démarrage.
+
+Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
+
+### Options
+
+| Option | Rôle | Par défaut |
+| --- | --- | --- |
+| `title` | Titre de la carte | nom de l'imprimante, ou « Imprimantes » |
+| `icon`, `icon_color` | Icône et couleur de l'icône | `mdi:printer`, bleu |
+| `printers` | Imprimantes affichées, dans cet ordre : appareils, ou `{ device, name }` | toutes |
+| `low_level` | Seuil d'alerte de l'encre et du toner (%) | `15` |
+| `show_supplies`, `show_parts`, `show_counters` | Afficher chaque partie | `true` |
+| `theme` | `v2`, `auto` ou `ha` | `v2` |
 
 ## Support
 

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Imprimantes 3D · démo</title>
-<meta name="description" content="Démonstration de la carte Lovelace Imprimantes 3D avec des données simulées.">
+<title>Cartes Imprimantes · démo</title>
+<meta name="description" content="Démonstration des cartes Lovelace Imprimantes 3D et Imprimantes de bureau avec des données simulées.">
 <style>
   :root {
     --bg: #0f1724; --panel: #172133; --line: #2a3850; --text: #e7edf5; --muted: #8fa0b8;
@@ -82,8 +82,8 @@
   <header class="top">
     <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="22" height="22" rx="4" fill="none" stroke="var(--accent)" stroke-width="2.4"/><path d="M11 21h10M14 10h4l-1 6h-2z" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
     <div>
-      <h1>Carte Imprimantes 3D <span class="badge" id="ver">démo</span></h1>
-      <p class="lead">Moonraker, OctoPrint, PrusaLink, Bambu Lab · données simulées, sans Home Assistant</p>
+      <h1>Cartes Imprimantes <span class="badge" id="ver">démo</span></h1>
+      <p class="lead">Imprimantes 3D (Moonraker, OctoPrint, PrusaLink, Bambu Lab) et de bureau (IPP, Brother) · données simulées, sans Home Assistant</p>
     </div>
     <nav class="links">
       <a href="https://github.com/Marlboro62/printers">Dépôt GitHub</a>
@@ -93,6 +93,10 @@
 
   <div class="grid">
     <aside class="panel" aria-label="Réglages de la démo">
+      <h2>Carte</h2>
+      <div class="ctl"><div class="seg" data-key="card">
+        <button data-v="3d">Imprimantes 3D</button><button data-v="office">Imprimantes de bureau</button><button data-v="both">Les 2</button></div></div>
+
       <h2>Affichage</h2>
       <div class="ctl"><div class="ctl-l">Page</div><div class="seg" data-key="page">
         <button data-v="dark">Sombre</button><button data-v="light">Clair</button></div></div>
@@ -102,12 +106,15 @@
         <button data-v="mobile">Téléphone</button><button data-v="large">Tablette / PC</button></div></div>
 
       <h2>Situation simulée</h2>
-      <div class="ctl"><div class="ctl-l">Imprimantes</div><div class="seg" data-key="count">
+      <div class="ctl" data-for="3d both"><div class="ctl-l">Imprimantes 3D</div><div class="seg" data-key="count">
         <button data-v="1">Une</button><button data-v="2">Deux</button></div></div>
-      <div class="ctl"><div class="ctl-l">Voron 2.4 (Klipper, Moonraker)</div><div class="seg" data-key="job">
+      <div class="ctl" data-for="3d both"><div class="ctl-l">Voron 2.4 (Klipper, Moonraker)</div><div class="seg" data-key="job">
         <button data-v="printing"><i class="sw green"></i>Impression</button><button data-v="paused"><i class="sw orange"></i>En pause</button>
         <button data-v="complete"><i class="sw green"></i>Terminée</button><button data-v="error"><i class="sw red"></i>Erreur</button>
         <button data-v="idle"><i class="sw"></i>Prête</button><button data-v="offline"><i class="sw"></i>Éteinte</button></div></div>
+      <div class="ctl" data-for="office both"><div class="ctl-l">Imprimantes de bureau</div><div class="seg" data-key="office">
+        <button data-v="ok"><i class="sw green"></i>Tout va bien</button><button data-v="low"><i class="sw orange"></i>Encre basse</button>
+        <button data-v="jam"><i class="sw red"></i>Bourrage</button><button data-v="sleep"><i class="sw"></i>En veille</button></div></div>
     </aside>
 
     <main class="stage">
@@ -152,7 +159,7 @@
     });
   }
 
-  const defaults = { page: "dark", theme: "v2", width: "mobile", count: "2", job: "printing" };
+  const defaults = { card: "3d", page: "dark", theme: "v2", width: "mobile", count: "2", job: "printing", office: "ok" };
   let state = { ...defaults };
   try { state = { ...defaults, ...JSON.parse(localStorage.getItem("printers-card-demo") || "{}") }; } catch (e) { /* ignoré */ }
 
@@ -218,11 +225,33 @@
       a("button", "stop_job", "unknown"); a("button", "pause_job", "unknown");
       add("mk", "prusalink", "camera.prusa_mk4_preview", "idle", { entity_picture: THUMB_BOX });
     }
+    // Imprimantes de bureau : jet d'encre par IPP, laser couleur par l'intégration Brother
+    const o = state.office;
+    const addk = (dev, platform, id, v, attrs = {}, tk = null) => { add(dev, platform, id, v, attrs); ent[id].translation_key = tk; };
+    devices.hp = { id: "hp", name: "HP OfficeJet Pro 9010", manufacturer: "HP", model: "OfficeJet Pro 9010" };
+    addk("hp", "ipp", "sensor.hp_officejet_pro_9010", o === "sleep" ? "idle" : o === "jam" ? "stopped" : "idle",
+      { state_reason: o === "jam" ? "media-jam-error" : o === "sleep" ? "sleep" : "none", state_message: "" }, "printer");
+    for (const [k, n, v] of [["black_ink", "Black ink", o === "low" ? 6 : 64], ["cyan_ink", "Cyan ink", 48], ["magenta_ink", "Magenta ink", o === "low" ? 12 : 71], ["yellow_ink", "Yellow ink", 35]])
+      addk("hp", "ipp", `sensor.hp_officejet_pro_9010_${k}`, v, { unit_of_measurement: "%", friendly_name: `HP OfficeJet Pro 9010 ${n}`, marker_low_level: 10 }, "marker");
+    addk("hp", "ipp", "sensor.hp_officejet_pro_9010_uptime", new Date(Date.now() - 3 * 86400e3 - 5 * 3600e3).toISOString(), {}, "uptime");
+    devices.br = { id: "br", name: "Brother HL-L3270CDW", manufacturer: "Brother", model: "HL-L3270CDW" };
+    addk("br", "brother", "sensor.hl_l3270cdw_status", o === "sleep" ? "sleep" : "ready", {}, "status");
+    for (const [c, v] of [["black", o === "low" ? 9 : 55], ["cyan", 80], ["magenta", 80], ["yellow", 70]])
+      addk("br", "brother", `sensor.hl_l3270cdw_${c}_toner_remaining`, v, { unit_of_measurement: "%", friendly_name: `Brother HL-L3270CDW ${c} toner remaining` }, `${c}_toner_remaining`);
+    addk("br", "brother", "sensor.hl_l3270cdw_drum_remaining_life", 62, { unit_of_measurement: "%" }, "drum_remaining_life");
+    addk("br", "brother", "sensor.hl_l3270cdw_belt_unit_remaining_life", 88, { unit_of_measurement: "%" }, "belt_unit_remaining_life");
+    addk("br", "brother", "sensor.hl_l3270cdw_fuser_remaining_life", 91, { unit_of_measurement: "%" }, "fuser_remaining_life");
+    addk("br", "brother", "sensor.hl_l3270cdw_page_counter", 4812, {}, "page_counter");
+    addk("br", "brother", "sensor.hl_l3270cdw_bw_pages", 3190, {}, "bw_pages");
+    addk("br", "brother", "sensor.hl_l3270cdw_color_pages", 1622, {}, "color_pages");
+    addk("br", "brother", "sensor.hl_l3270cdw_duplex_unit_page_counter", 905, {}, "duplex_unit_page_counter");
+    addk("br", "brother", "sensor.hl_l3270cdw_last_restart", new Date(Date.now() - 12 * 86400e3).toISOString(), {}, "last_restart");
     return { st, ent, devices };
   }
 
-  function config() {
-    return { type: "custom:printers-card", theme: state.theme };
+  function configs() {
+    const c = { "3d": { type: "custom:printers-card", theme: state.theme }, office: { type: "custom:printers-office-card", theme: state.theme } };
+    return state.card === "both" ? [c["3d"], c.office] : [c[state.card] || c["3d"]];
   }
 
   const frame = document.getElementById("frame");
@@ -246,13 +275,15 @@
     document.documentElement.dataset.theme = state.page;
     frame.dataset.width = state.width;
     document.querySelectorAll(".seg").forEach((seg) => seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === state[seg.dataset.key]))));
-    const c = config();
-    document.getElementById("yaml").textContent = `type: ${c.type}\ntheme: ${c.theme}`;
-    if (!customElements.get("printers-card")) return;
-    let el = frame.firstElementChild;
-    if (!el) { el = document.createElement("printers-card"); frame.append(el); }
-    el.setConfig(c);
-    el.hass = hass();
+    document.querySelectorAll("[data-for]").forEach((el) => { el.hidden = !el.dataset.for.split(" ").includes(state.card); });
+    const list = configs();
+    document.getElementById("yaml").textContent = list.length === 1 ? `type: ${list[0].type}\ntheme: ${list[0].theme}`
+      : "type: vertical-stack\ncards:\n" + list.map((c) => `  - type: ${c.type}\n    theme: ${c.theme}`).join("\n");
+    if (!list.every((c) => customElements.get(c.type.replace("custom:", "")))) return;
+    const key = list.map((c) => c.type).join();
+    if (frame.dataset.key !== key) { frame.replaceChildren(...list.map((c) => document.createElement(c.type.replace("custom:", "")))); frame.dataset.key = key; }
+    const h = hass();
+    [...frame.children].forEach((el, i) => { el.setConfig(list[i]); el.hass = h; });
   }
 
   document.querySelectorAll(".seg").forEach((seg) => seg.addEventListener("click", (ev) => {
@@ -275,7 +306,7 @@
   }).catch(() => {});
 
   render();
-  customElements.whenDefined("printers-card").then(render);
+  Promise.all(["printers-card", "printers-office-card"].map((t) => customElements.whenDefined(t))).then(render);
 })();
 </script>
 </body>

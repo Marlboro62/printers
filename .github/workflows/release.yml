@@ -80,6 +80,6 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
-          name: Carte Imprimantes 3D ${{ env.VERSION }}
+          name: Cartes Imprimantes ${{ env.VERSION }}
           generate_release_notes: true
           prerelease: ${{ contains(env.VERSION, '-') }}
