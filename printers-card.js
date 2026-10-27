@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.2-beta";
+const CARD_VERSION = "0.1.3-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -367,7 +367,9 @@ class PrintersCard extends HTMLElement {
       }).join("")}</div>` : "";
 
       const msg = this._txt(r.message);
-      const showMsg = msg && !/^printer is ready$/i.test(msg) && (status === "error" || status === "paused" || this._txt(r.message) !== this._txt(r.pstate));
+      // message de l'imprimante, sauf s'il répète l'état (« Printer is ready », « Impression en cours... »)
+      const same = (a, b) => String(a || "").toLowerCase().replace(/[^a-zà-ÿ0-9]+/g, " ").trim() === String(b || "").toLowerCase().replace(/[^a-zà-ÿ0-9]+/g, " ").trim();
+      const showMsg = msg && !/^printer is ready$/i.test(msg) && !same(msg, stLabel) && !same(msg, this._txt(r.pstate)) && !same(msg, this._txt(r.state));
       const state = `<div class="pc-state ${stCls}" data-entity="${esc(r.state || r.pstate || "")}"><ha-icon icon="${stIcon}"></ha-icon>
         <div><b>${stLabel}</b>${showMsg ? `<span>${esc(msg)}</span>` : p.model && p.model.toLowerCase() !== p.name.toLowerCase() ? `<span>${esc(p.model)}</span>` : ""}</div></div>`;
 
