@@ -63,8 +63,6 @@ Si votre intégration n'est pas bien reconnue, ouvrez une [issue](https://github
 2. Ajoutez `https://github.com/Marlboro62/printers` avec le type **Tableau de bord** (Dashboard).
 3. Cherchez **Carte Imprimantes 3D**, installez, puis rechargez la page (Ctrl+F5).
 
-> Tant qu'il n'existe qu'une version bêta, activez **Afficher les versions bêta** dans la fenêtre de téléchargement de HACS.
-
 ### Manuellement
 
 1. Téléchargez [`printers-card.js`](https://raw.githubusercontent.com/Marlboro62/printers/main/printers-card.js) (clic droit → Enregistrer sous) et copiez-le dans `/config/www/`.
