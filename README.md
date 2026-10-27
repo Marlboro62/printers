@@ -113,6 +113,8 @@ La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprim
 - **Commandes** : pause, reprise, annulation, arrêt d'urgence, retour à l'origine et lumières. **Annuler, l'arrêt d'urgence et l'origine se confirment en deux clics** : le premier arme le bouton (coche orange qui pulse), le second dans les 5 secondes envoie la commande.
 - **Statistiques** : nombre d'impressions, temps total, filament total, plus longue impression.
 - **Appareil** : adresse IP de l'imprimante, avec un lien vers sa page d'administration, version du micrologiciel, et mise à jour disponible quand l'intégration en propose une (un clic ouvre la fenêtre d'installation de Home Assistant).
+- **Alimentation** : si l'imprimante est branchée sur une prise pilotée (prise connectée, module MQTT…), bouton **Allumer**, et **Éteindre** en deux clics (jamais pendant une impression). La prise est trouvée d'après le nom de l'imprimante (`switch.prise_neptune` pour « Neptune 4 Max »), ou indiquée avec `power`. Prise coupée : l'imprimante s'affiche **« Éteinte »** ; prise allumée, le temps que l'intégration revienne : **« Démarrage… »**.
+- **Intégration désactivée à l'extinction** (par exemple par une automatisation qui coupe Moonraker quand la prise s'éteint) : l'imprimante reste affichée grâce à son appareil, même sans entités.
 
 Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 
@@ -122,7 +124,8 @@ Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 | --- | --- | --- |
 | `title` | Titre de la carte | nom de l'imprimante, ou « Imprimantes 3D » |
 | `icon`, `icon_color` | Icône et couleur de l'icône | `mdi:printer-3d`, bleu |
-| `printers` | Imprimantes affichées, dans cet ordre : appareils, ou `{ device, name, camera }` | toutes |
+| `printers` | Imprimantes affichées, dans cet ordre : appareils, ou `{ device, name, camera, power }` | toutes |
+| `power` | `false` : ne pas chercher de prise d'alimentation (sinon, par imprimante dans `printers`) | prise trouvée d'après le nom |
 | `camera` | Caméra à afficher, à la place de celle de l'imprimante | caméra de l'imprimante |
 | `camera_mode` | `live` (vidéo en direct) ou `snapshot` (image par image) | `live` |
 | `camera_refresh` | Rafraîchissement en mode `snapshot` (secondes, 2 au minimum) | `5` |
@@ -137,6 +140,7 @@ printers:
   - device: 0123456789abcdef0123456789abcdef
     name: Atelier
     camera: camera.atelier_webcam
+    power: switch.prise_atelier
   - 89abcdef0123456789abcdef01234567
 ```
 
@@ -158,6 +162,8 @@ La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprim
 - **Pièces d'usure** (Brother) : tambour, unité de fixation, courroie, laser, kit papier, avec leur durée de vie restante.
 - **Compteurs** : pages imprimées, noir et blanc, couleur, recto verso, et durée depuis le dernier démarrage.
 - **Appareil** : adresse IP de l'imprimante, avec un lien vers sa page d'administration, version du micrologiciel, et mise à jour disponible quand l'intégration en propose une (un clic ouvre la fenêtre d'installation de Home Assistant).
+- **Alimentation** : si l'imprimante est branchée sur une prise pilotée (prise connectée, module MQTT…), bouton **Allumer**, et **Éteindre** en deux clics (jamais pendant une impression). La prise est trouvée d'après le nom de l'imprimante (`switch.prise_neptune` pour « Neptune 4 Max »), ou indiquée avec `power`. Prise coupée : l'imprimante s'affiche **« Éteinte »** ; prise allumée, le temps que l'intégration revienne : **« Démarrage… »**.
+- **Intégration désactivée à l'extinction** (par exemple par une automatisation qui coupe Moonraker quand la prise s'éteint) : l'imprimante reste affichée grâce à son appareil, même sans entités.
 
 Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 

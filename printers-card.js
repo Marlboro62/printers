@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.3.4-beta.1";
+const CARD_VERSION = "0.3.4-beta.2";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -111,6 +111,7 @@ const STATE = {
   complete: ["Impression terminée", "mdi:check-circle-outline", "ok"], cancelled: ["Impression annulée", "mdi:close-circle-outline", "warn"],
   error: ["Erreur", "mdi:alert-circle-outline", "bad"], idle: ["Prête", "mdi:printer-3d", "ok"], offline: ["Hors ligne", "mdi:lan-disconnect", "off"],
 };
+const slug = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 /** Suffixe de connexion à ignorer pour reconnaître une même imprimante déclarée deux fois. */
 const LINK = /[\s_-]*\(?(ethernet|eth|wi-?fi|wlan|lan|wireless|filaire|sans fil)\)?$/i;
 
@@ -158,6 +159,17 @@ class PrintersCard extends HTMLElement {
             this._armed = null;
             this._hass?.callService("button", "press", { entity_id: id });
           }
+          this._sig = null; this._render(); return;
+        }
+        const pw = ev.target.closest?.("[data-power]");
+        if (pw) {
+          const id = pw.dataset.power, key = `power:${id}`;
+          if (pw.dataset.on) this._hass?.callService("homeassistant", "turn_on", { entity_id: id });
+          else if (this._armed !== key) {
+            this._armed = key;
+            clearTimeout(this._armTimer);
+            this._armTimer = setTimeout(() => { this._armed = null; this._sig = null; this._render(); }, 5000);
+          } else { this._armed = null; this._hass?.callService("homeassistant", "turn_off", { entity_id: id }); }
           this._sig = null; this._render(); return;
         }
         const tog = ev.target.closest?.("[data-toggle]");
@@ -379,6 +391,12 @@ class PrintersCard extends HTMLElement {
       else if (role === "camera") d.cameras.push(id);
       else d.roles[role] ||= id;
     }
+    // imprimante dont l'intégration est désactivée (ex. automatisation à l'extinction) : ses entités
+    // disparaissent, mais l'appareil reste enregistré ; on l'affiche alors éteinte
+    for (const dev of Object.values(devs)) {
+      const plat = (dev.identifiers || []).map((x) => x?.[0]).find((x) => PLATFORMS[x]);
+      if (plat && !byDev[dev.id] && !dev.via_device_id) byDev[dev.id] = { id: dev.id, platform: plat, roles: {}, outputs: [], others: [], cameras: [], noEntities: true };
+    }
     const all = Object.values(byDev);
     for (const d of all) {
       const dev = devs[d.id] || {};
@@ -401,11 +419,29 @@ class PrintersCard extends HTMLElement {
     if (want.length) {
       list = want.map((w) => {
         const d = list.find((x) => x.links.includes(w.device) || x.name.toLowerCase() === String(w.device || "").toLowerCase());
-        return d ? { ...d, name: w.name || d.name, camera: w.camera || null } : null;
+        return d ? { ...d, name: w.name || d.name, camera: w.camera || null, power: w.power ?? null } : null;
       }).filter(Boolean);
     } else list.sort((a, b) => a.name.localeCompare(b.name, "fr"));
     this._map = list;
     return list;
+  }
+
+  /** Prise ou interrupteur qui alimente l'imprimante : option power, sinon un switch qui porte son nom
+   *  (« switch.prise_neptune » pour « Neptune 4 Max »). power: false désactive la recherche. */
+  _power(p) {
+    const c = this._config;
+    if (p.power === false || c.power === false) return null;
+    if (typeof p.power === "string") return p.power;
+    const reg = this._hass.entities || {};
+    const skip = new Set(["printer", "imprimante", "max", "pro", "plus", "mini", "ethernet", "wifi", "lan", "klipper", "moonraker"]);
+    const words = slug(p.name).split("_").filter((w) => w.length >= 3 && !/^\d+$/.test(w) && !skip.has(w));
+    if (!words.length) return null;
+    const mine = new Set(p.links || [p.id]);
+    return Object.keys(this._hass.states).find((id) => {
+      if (!/^switch\./.test(id) || PLATFORMS[reg[id]?.platform] || mine.has(reg[id]?.device_id)) return false;
+      const hay = `_${id.split(".")[1]}_${slug(this._hass.states[id].attributes?.friendly_name || "")}_`;
+      return words.some((w) => hay.includes(`_${w}_`));
+    }) || null;
   }
 
   _status(p) {
@@ -424,7 +460,7 @@ class PrintersCard extends HTMLElement {
     // onglet choisi, sinon la première imprimante en cours d'impression
     const p = list.find((x) => x.id === this._tab || x.links?.includes(this._tab))
       || list.find((x) => ["printing", "paused", "error"].includes(this._status(x))) || list[0];
-    const ids = list.flatMap((x) => [...Object.values(x.roles), ...x.outputs, ...x.others]);
+    const ids = list.flatMap((x) => [...Object.values(x.roles), ...x.outputs, ...x.others, this._power(x)].filter(Boolean));
     const sig = `${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|${this._armed}|${Math.floor(Date.now() / 30000)}|` + ids.map((id) => this._st(id)?.state ?? "-").join("|");
     if (sig === this._sig) return;
     this._sig = sig;
@@ -432,7 +468,7 @@ class PrintersCard extends HTMLElement {
     const statuses = list.map((x) => this._status(x));
     const printing = statuses.filter((s) => s === "printing" || s === "paused").length;
     const title = c.title || (list.length === 1 ? list[0].name : "Imprimantes 3D");
-    const sub = !list.length ? "" : list.length === 1 ? STATE[statuses[0]][0]
+    const sub = !list.length ? "" : list.length === 1 ? (statuses[0] === "offline" && (list[0].noEntities || this._st(this._power(list[0]))?.state === "off") ? "Éteinte" : STATE[statuses[0]][0])
       : `${list.length} imprimantes · ${printing ? `${printing} en impression` : "au repos"}`;
 
     let body = "", camShown = null;
@@ -440,7 +476,12 @@ class PrintersCard extends HTMLElement {
       body = `<div class="empty">Aucune imprimante trouvée<span>Ajoutez l'intégration Moonraker (Klipper, via HACS), OctoPrint, PrusaLink ou Bambu Lab, puis rechargez la page.</span></div>`;
     } else {
       const r = p.roles, status = this._status(p);
-      const [stLabel, stIcon, stCls] = STATE[status];
+      const powerId = c.show_controls === false ? null : this._power(p);
+      const powerSt = this._st(powerId)?.state;
+      const isOff = status === "offline" && (powerSt === "off" || (!powerId && p.noEntities));
+      // prise allumée mais intégration pas encore revenue : l'imprimante démarre
+      const booting = status === "offline" && powerSt === "on" && p.noEntities;
+      const [stLabel, stIcon, stCls] = isOff ? ["Éteinte", "mdi:power-plug-off-outline", "off"] : booting ? ["Démarrage…", "mdi:timer-sand", "warn"] : STATE[status];
       const tabs = list.length > 1 ? `<div class="pc-tabs" role="tablist">${list.map((x, i) => {
         const s = statuses[i], pr = this._num(x.roles.progress);
         return `<button class="pc-tab ${x.id === p.id ? "on" : ""}" role="tab" aria-selected="${x.id === p.id}" data-tab="${esc(x.id)}">
@@ -555,7 +596,15 @@ class PrintersCard extends HTMLElement {
         return `<button class="pc-btn ${cls} ${armed ? "armed" : ""}" data-press="${esc(id)}" ${confirm ? 'data-confirm="1"' : ""} title="${esc(armed ? `${label} : cliquez encore pour confirmer` : label)}">
           <ha-icon icon="${armed ? "mdi:check-bold" : icon}"></ha-icon><span>${armed ? "Confirmer ?" : label}</span></button>`;
       };
-      const ctl = c.show_controls === false || status === "offline" ? [] : [
+      // alimentation : allumer d'un clic ; éteindre en deux clics, et jamais pendant une impression
+      const powerBtn = (() => {
+        if (!powerId || !this._st(powerId) || powerSt === "unavailable") return "";
+        if (powerSt !== "on") return `<button class="pc-btn go" data-power="${esc(powerId)}" data-on="1" title="Allumer l'imprimante"><ha-icon icon="mdi:power"></ha-icon><span>Allumer</span></button>`;
+        if (status === "printing" || status === "paused") return "";
+        const key = `power:${powerId}`, armed = this._armed === key;
+        return `<button class="pc-btn bad ${armed ? "armed" : ""}" data-power="${esc(powerId)}" title="${armed ? "Éteindre : cliquez encore pour confirmer" : "Éteindre l'imprimante"}"><ha-icon icon="${armed ? "mdi:check-bold" : "mdi:power"}"></ha-icon><span>${armed ? "Confirmer ?" : "Éteindre"}</span></button>`;
+      })();
+      const ctl = c.show_controls === false ? [] : status === "offline" ? [powerBtn].filter(Boolean) : [powerBtn,
         status === "printing" ? btn(r.pause, "mdi:pause", "Pause", "warn") : "",
         status === "paused" ? btn(r.resume, "mdi:play", "Reprendre", "go") : "",
         status === "printing" || status === "paused" ? btn(r.cancel, "mdi:stop", "Annuler", "bad", true) : "",
