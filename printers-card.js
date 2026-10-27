@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.4-beta";
+const CARD_VERSION = "0.1.5-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -282,6 +282,39 @@ class PrintersCard extends HTMLElement {
     return v * ({ s: 1, sec: 1, min: 60, h: 3600, d: 86400 }[u] || 1);
   }
 
+  /** Dernière impression d'une imprimante (mémoire, puis stockage du navigateur). */
+  _lastJob(id) {
+    this._last ||= {};
+    if (!(id in this._last)) {
+      try { this._last[id] = JSON.parse(localStorage.getItem(`printers-card:last:${id}`) || "null"); } catch (e) { this._last[id] = null; }
+    }
+    return this._last[id];
+  }
+
+  /** Garde l'impression en cours ; la miniature est copiée une fois par fichier (son lien expire). */
+  _keep(id, j) {
+    const prev = this._lastJob(id);
+    const next = { file: j.file, pct: j.pct, elapsed: j.elapsed, layer: j.layer, layers: j.layers, filament: j.filament,
+      result: j.result || null, ended: j.ended || null, thumbData: prev?.file === j.file ? prev.thumbData : null };
+    if (prev && JSON.stringify({ ...prev, pct: Math.round(prev.pct || 0), elapsed: Math.round((prev.elapsed || 0) / 60) })
+      === JSON.stringify({ ...next, pct: Math.round(next.pct || 0), elapsed: Math.round((next.elapsed || 0) / 60) })) return;
+    this._last[id] = next;
+    try { localStorage.setItem(`printers-card:last:${id}`, JSON.stringify(next)); } catch (e) { /* stockage indisponible */ }
+    if (!next.thumbData && j.thumb && !this._thumbBusy) {
+      this._thumbBusy = true;
+      fetch(j.thumb).then((res) => (res.ok ? res.blob() : null)).then((b) => new Promise((ok) => {
+        if (!b || b.size > 200000) return ok(null);
+        const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => ok(null); fr.readAsDataURL(b);
+      })).then((data) => {
+        const cur = this._last[id];
+        if (data && cur && cur.file === next.file) {
+          cur.thumbData = data;
+          try { localStorage.setItem(`printers-card:last:${id}`, JSON.stringify(cur)); } catch (e) { /* trop gros ou indisponible */ }
+        }
+      }).catch(() => {}).finally(() => { this._thumbBusy = false; });
+    }
+  }
+
   /** Imprimantes : une par appareil, Ethernet et Wi-Fi fusionnés (la connexion qui répond est gardée). */
   _resolve() {
     if (this._map) return this._map;
@@ -373,32 +406,44 @@ class PrintersCard extends HTMLElement {
       const state = `<div class="pc-state ${stCls}" data-entity="${esc(r.state || r.pstate || "")}"><ha-icon icon="${stIcon}"></ha-icon>
         <div><b>${stLabel}</b>${showMsg ? `<span>${esc(msg)}</span>` : p.model && p.model.toLowerCase() !== p.name.toLowerCase() ? `<span>${esc(p.model)}</span>` : ""}</div></div>`;
 
-      // --- impression en cours (ou dernière impression si terminée ou annulée)
+      // --- impression en cours, sinon dernière impression (gardée par la carte : Moonraker efface le fichier à la fin)
       let job = "";
       const file = this._txt(r.filename);
-      if (c.show_job !== false && (file || status === "printing" || status === "paused")) {
-        const pct = this._num(r.progress);
-        const left = this._secs(r.left), elapsed = this._secs(r.elapsed);
+      const active = status === "printing" || status === "paused";
+      const kv = (label, v) => (v === null || v === undefined ? "" : `<div class="pc-kv"><span>${label}</span><b>${esc(v)}</b></div>`);
+      let j = null;
+      if (active || (file && this._num(r.progress))) {
         let eta = this._txt(r.eta) ? new Date(this._txt(r.eta)) : null;
         if (eta && isNaN(eta)) eta = null;
-        if (!eta && left && (status === "printing")) eta = new Date(Date.now() + left * 1000);
-        const layer = this._num(r.layer), layers = this._num(r.layers);
-        const thumb = this._st(r.thumbnail)?.attributes?.entity_picture;
-        const kv = (label, v) => (v === null || v === undefined ? "" : `<div class="pc-kv"><span>${label}</span><b>${esc(v)}</b></div>`);
-        const active = status === "printing" || status === "paused";
+        const left = this._secs(r.left);
+        if (!eta && left && status === "printing") eta = new Date(Date.now() + left * 1000);
+        j = { file, pct: this._num(r.progress), elapsed: this._secs(r.elapsed), left, eta, layer: this._num(r.layer), layers: this._num(r.layers),
+          filament: this._num(r.filament), speed: this._num(r.speed), thumb: this._st(r.thumbnail)?.attributes?.entity_picture, cls: stCls };
+        if (active) this._keep(p.id, j);
+      }
+      const last = !active ? this._lastJob(p.id) : null;
+      if (last && (!j || !j.file || j.file === last.file)) {
+        // fin d'impression vue par la carte : résultat, heure, barre pleine si terminée
+        if (["complete", "cancelled", "error"].includes(status) && !last.result) this._keep(p.id, { ...last, result: status, ended: Date.now() });
+        const l = this._lastJob(p.id);
+        j = { ...l, ...(j || {}), thumb: j?.thumb || l.thumbData || null, pct: l.result === "complete" ? 100 : (j?.pct ?? l.pct),
+          cls: { complete: "ok", cancelled: "warn", error: "bad" }[l.result] || "ok" };
+      }
+      if (c.show_job !== false && j) {
+        const pct = j.pct;
         job = `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:file-cad-box"></ha-icon>${active ? "Impression" : "Dernière impression"}</div>
           <div class="pc-job" data-entity="${esc(r.progress || r.filename || "")}">
-            ${thumb ? `<img class="pc-thumb" src="${esc(thumb)}" alt="" loading="lazy">` : `<div class="pc-thumb none"><ha-icon icon="mdi:cube-outline"></ha-icon></div>`}
+            ${j.thumb ? `<img class="pc-thumb" src="${esc(j.thumb)}" alt="">` : `<div class="pc-thumb none"><ha-icon icon="mdi:cube-outline"></ha-icon></div>`}
             <div class="pc-jb">
-              <div class="pc-file" title="${esc(file || "")}">${esc((file || "—").replace(/\.(gcode|bgcode|3mf|gco)$/i, ""))}</div>
-              <div class="pc-prog"><div class="pc-bar ${stCls}"><i style="width:${Math.max(0, Math.min(100, pct ?? (status === "complete" ? 100 : 0)))}%"></i></div><b>${pct === null ? "—" : `${fmt(pct, pct < 10 && pct > 0 ? 1 : 0)} %`}</b></div>
+              <div class="pc-file" title="${esc(j.file || "")}">${esc((j.file || "—").replace(/\.(gcode|bgcode|3mf|gco)$/i, ""))}</div>
+              <div class="pc-prog"><div class="pc-bar ${j.cls}"><i style="width:${Math.max(0, Math.min(100, pct ?? 0))}%"></i></div><b>${pct === null || pct === undefined ? "—" : `${fmt(pct, pct < 10 && pct > 0 ? 1 : 0)} %`}</b></div>
               <div class="pc-kvs">
-                ${kv("Écoulé", dur(elapsed))}
-                ${active ? kv("Restant", left ? dur(left) : null) : ""}
-                ${active ? kv("Fin prévue", eta ? when(eta) : null) : ""}
-                ${kv("Couche", layer !== null && layers ? `${fmt(layer)} / ${fmt(layers)}` : null)}
-                ${kv("Filament", this._num(r.filament) ? `${fmt(this._num(r.filament), 1)} m` : null)}
-                ${active ? kv("Vitesse", this._num(r.speed) ? `${fmt(this._num(r.speed))} mm/s` : null) : ""}
+                ${kv(active ? "Écoulé" : "Durée", dur(j.elapsed))}
+                ${active ? kv("Restant", j.left ? dur(j.left) : null) : ""}
+                ${active ? kv("Fin prévue", j.eta ? when(j.eta) : null) : kv({ cancelled: "Annulée", error: "Arrêtée" }[j.result] || "Terminée", j.ended ? when(new Date(j.ended)) : null)}
+                ${kv("Couche", j.layer !== null && j.layer !== undefined && j.layers ? `${fmt(j.layer)} / ${fmt(j.layers)}` : null)}
+                ${kv("Filament", j.filament ? `${fmt(j.filament, 1)} m` : null)}
+                ${active ? kv("Vitesse", j.speed ? `${fmt(j.speed)} mm/s` : null) : ""}
               </div>
             </div>
           </div></div>`;
@@ -424,7 +469,7 @@ class PrintersCard extends HTMLElement {
         return `<div class="pc-t ${heating ? "hot" : ""}" data-entity="${esc(cur)}">
           <div class="pc-tt"><span><ha-icon icon="${icon}"></ha-icon>${label}</span><b>${fmt(v, v < 100 ? 1 : 0)}<small> °C</small></b></div>
           <div class="pc-tbar"><i style="width:${pct}%"></i></div>
-          <div class="pc-tn">${heating ? `Consigne ${fmt(t)} °C` : "Arrêt"}${pw !== null && heating ? ` · chauffe ${fmt(pw)} %` : ""}</div></div>`;
+          <div class="pc-tn">${heating ? `Consigne ${fmt(t)} °C` : v >= 45 ? "Refroidissement" : "Arrêt"}${pw !== null && heating ? ` · chauffe ${fmt(pw)} %` : ""}</div></div>`;
       };
       const extra = p.others.filter((id) => this._st(id)?.attributes?.unit_of_measurement === "°C" && ![r.ext, r.bed, r.chamber].includes(id)).map((id) => {
         const v = this._num(id);

@@ -56,9 +56,9 @@ La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprim
 - **Onglets** : une imprimante par onglet, avec un point de couleur (prête, en impression, en pause, en erreur) et l'avancement. L'onglet choisi est retenu ; sinon la carte ouvre l'imprimante en cours d'impression.
 - **Imprimante déclarée deux fois** (Ethernet et Wi-Fi) : un seul onglet. La carte garde la connexion qui répond, et l'Ethernet si les deux répondent.
 - **État** : prête, impression en cours, en pause, terminée, annulée, erreur, hors ligne, avec le message de l'imprimante (erreur Klipper, changement de filament…). La carte prend une bordure rouge en cas d'erreur.
-- **Impression** : aperçu du fichier (miniature du trancheur), nom, barre de progression, temps écoulé et restant, heure de fin prévue, couche, filament utilisé, vitesse. Après l'impression : « Dernière impression ».
+- **Impression** : aperçu du fichier (miniature du trancheur), nom, barre de progression, temps écoulé et restant, heure de fin prévue, couche, filament utilisé, vitesse. Après l'impression : « Dernière impression », avec la durée et l'heure de fin. La carte la garde elle-même (dans le navigateur), même quand l'imprimante efface le fichier à la fin.
 - **Caméra** : vidéo en direct (flux de Home Assistant, ouvert une fois et gardé quand la carte se met à jour), ou image par image toutes les 5 s (réglable) pour économiser le réseau.
-- **Températures** : buse, plateau et caisson, avec la consigne et la puissance de chauffe ; températures de l'hôte et de la carte mère, ventilateur.
+- **Températures** : buse, plateau et caisson, avec la consigne et la puissance de chauffe, ou « Refroidissement » après l'impression ; températures de l'hôte et de la carte mère, ventilateur.
 - **Commandes** : pause, reprise, annulation, arrêt d'urgence, retour à l'origine et lumières. **Annuler, l'arrêt d'urgence et l'origine se confirment en deux clics** : le premier arme le bouton (coche orange qui pulse), le second dans les 5 secondes envoie la commande.
 - **Statistiques** : nombre d'impressions, temps total, filament total, plus longue impression.
 
