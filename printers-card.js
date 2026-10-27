@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.3.4-beta.2";
+const CARD_VERSION = "0.3.4-beta.3";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -886,10 +886,10 @@ const officeRole = (id, e) => {
 /** Couleur et libellé d'un consommable d'après son nom. */
 const INKS = [
   [/photo[_ ]?(black|noir)/, "#3a3a3a", "Noir photo"], [/(black|noir|\bbk\b|_k$|_bk_)/, "#1b1b1b", "Noir"],
-  [/(light[_ ]?cyan|cyan[_ ]?clair)/, "#7fd6f5", "Cyan clair"], [/cyan/, "#00a3e0", "Cyan"],
-  [/(light[_ ]?magenta|magenta[_ ]?clair)/, "#f5a0d4", "Magenta clair"], [/magenta/, "#e5007e", "Magenta"],
+  [/(light[_ ]?cyan|cyan[_ ]?clair)/, "#7fd6f5", "Cyan clair"], [/(photo[_ ]?cyan|cyan[_ ]?photo|\bpc\b)/, "#5cc8f0", "Cyan photo"], [/cyan/, "#00a3e0", "Cyan"],
+  [/(light[_ ]?magenta|magenta[_ ]?clair)/, "#f5a0d4", "Magenta clair"], [/(photo[_ ]?magenta|magenta[_ ]?photo|\bpm\b)/, "#f06cbc", "Magenta photo"], [/magenta/, "#e5007e", "Magenta"],
   [/(yellow|jaune)/, "#ffd400", "Jaune"], [/(tri[_ -]?colou?r|colou?r|couleur|cmy)/, "linear-gradient(90deg, #00a3e0 0 33.3%, #e5007e 0 66.6%, #ffd400 0)", "Couleur"],
-  [/(grey|gray|gris)/, "#8a8a8a", "Gris"], [/(red|rouge)/, "#d7263d", "Rouge"], [/(blue|bleu)/, "#2251cc", "Bleu"],
+  [/(light[_ ]?gr[ae]y|gris[_ ]?clair|\blgy\b)/, "#c2c2c2", "Gris clair"], [/(grey|gray|gris|\bgy\b)/, "#8a8a8a", "Gris"], [/(red|rouge)/, "#d7263d", "Rouge"], [/(blue|bleu)/, "#2251cc", "Bleu"],
 ];
 const inkOf = (s) => {
   const t = String(s || "").toLowerCase();
@@ -1107,7 +1107,7 @@ class PrintersOfficeCard extends HTMLElement {
       // --- encre ou toner : une jauge verticale par couleur
       const kind = sup.every((s) => s.kind === "toner") ? "Toner" : sup.every((s) => s.kind === "encre") ? "Encre" : "Encre et toner";
       const supHtml = c.show_supplies !== false && sup.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:water-outline"></ha-icon>${kind}</div>
-        <div class="po-inks">${sup.map((s) => `<div class="po-ink ${s.low ? "low" : ""}" data-entity="${esc(s.id)}" title="${esc(s.label)} : ${fmt(s.v)} %">
+        <div class="po-inks" style="--po-cols:${sup.length <= 6 ? sup.length : Math.ceil(sup.length / Math.ceil(sup.length / 6))}">${sup.map((s) => `<div class="po-ink ${s.low ? "low" : ""}" data-entity="${esc(s.id)}" title="${esc(s.label)} : ${fmt(s.v)} %">
           <div class="po-tank"><i style="height:${s.v}%;background:${s.color}"></i></div>
           <b>${fmt(s.v)} %</b><span>${esc(s.label)}</span>${s.low ? `<em>${s.empty ? "À remplacer" : "Bas"}</em>` : ""}</div>`).join("")}</div></div>` : "";
 
@@ -1156,7 +1156,8 @@ class PrintersOfficeCard extends HTMLElement {
 }
 
 const OFFICE_STYLE = `<style>
-.po-inks { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+.po-inks { display: grid; grid-template-columns: repeat(var(--po-cols, 4), minmax(0, 1fr)); gap: 8px; }
+@container (max-width: 300px) { .po-inks { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); } }
 .po-ink { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px 8px; border-radius: 12px; border: 1px solid var(--med-line);
   background: var(--med-surface); cursor: pointer; text-align: center; position: relative; }
 .po-ink.low { border-color: var(--pc-warn); }
