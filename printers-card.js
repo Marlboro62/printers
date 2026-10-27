@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.3.0-beta";
+const CARD_VERSION = "0.3.1-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -368,7 +368,8 @@ class PrintersCard extends HTMLElement {
     const devs = hass.devices || {};
     const byDev = {};
     for (const [id, e] of Object.entries(hass.entities || {})) {
-      if (!PLATFORMS[e.platform] || !hass.states[id] || e.hidden) continue;
+      // une imprimante éteinte reste affichée (hors ligne), même si l'intégration n'a pas pu démarrer
+      if (!PLATFORMS[e.platform] || e.hidden) continue;
       const role = roleOf(id);
       if (!role) continue;
       const key = e.device_id || `${e.platform}:${e.config_entry_id || "x"}`;
@@ -392,7 +393,8 @@ class PrintersCard extends HTMLElement {
     for (const d of all) (groups[d.name.toLowerCase()] ||= []).push(d);
     let list = Object.values(groups).map((g) => {
       const alive = g.filter((d) => this._txt(d.roles.state || d.roles.pstate) !== null);
-      const pick = alive.find((d) => norm(this._txt(d.roles.state)) === "printing") || alive.find((d) => /ethernet|lan|filaire/i.test(d.devName)) || alive[0] || g[0];
+      const pick = alive.find((d) => norm(this._txt(d.roles.state)) === "printing") || alive.find((d) => /ethernet|lan|filaire/i.test(d.devName)) || alive[0]
+        || g.find((d) => /ethernet|lan|filaire/i.test(d.devName)) || g[0];
       return { ...pick, links: g.map((d) => d.id) };
     });
     const want = (Array.isArray(c.printers) ? c.printers : c.printers ? [c.printers] : []).map((x) => (typeof x === "object" ? x : { device: x }));
@@ -793,7 +795,7 @@ const INKS = [
   [/photo[_ ]?(black|noir)/, "#3a3a3a", "Noir photo"], [/(black|noir|\bbk\b|_k$|_bk_)/, "#1b1b1b", "Noir"],
   [/(light[_ ]?cyan|cyan[_ ]?clair)/, "#7fd6f5", "Cyan clair"], [/cyan/, "#00a3e0", "Cyan"],
   [/(light[_ ]?magenta|magenta[_ ]?clair)/, "#f5a0d4", "Magenta clair"], [/magenta/, "#e5007e", "Magenta"],
-  [/(yellow|jaune)/, "#ffd400", "Jaune"], [/(tri[_ -]?colou?r|colou?r|couleur|cmy)/, "conic-gradient(#00a3e0 0 33%, #e5007e 0 66%, #ffd400 0)", "Couleur"],
+  [/(yellow|jaune)/, "#ffd400", "Jaune"], [/(tri[_ -]?colou?r|colou?r|couleur|cmy)/, "linear-gradient(90deg, #00a3e0 0 33.3%, #e5007e 0 66.6%, #ffd400 0)", "Couleur"],
   [/(grey|gray|gris)/, "#8a8a8a", "Gris"], [/(red|rouge)/, "#d7263d", "Rouge"], [/(blue|bleu)/, "#2251cc", "Bleu"],
 ];
 const inkOf = (s) => {
@@ -897,7 +899,7 @@ class PrintersOfficeCard extends HTMLElement {
     const hass = this._hass, c = this._config, devs = hass.devices || {};
     const byDev = {};
     for (const [id, e] of Object.entries(hass.entities || {})) {
-      if (!hass.states[id] || e.hidden || !e.device_id) continue;
+      if (e.hidden || !e.device_id) continue;
       const known = !!OFFICE_PLATFORMS[e.platform];
       const role = officeRole(id, e);
       if (!role || (!known && role !== "supply")) continue;
@@ -974,7 +976,8 @@ class PrintersOfficeCard extends HTMLElement {
 
     const nAlert = list.filter((x, i) => alertOf(i)).length;
     const title = c.title || (list.length === 1 ? list[0].name : "Imprimantes");
-    const sub = !list.length ? "" : list.length === 1 ? (infos[0].st.msg || OFFICE_STATE[infos[0].st.key][0])
+    // une seule imprimante : son modèle (l'état est juste en dessous)
+    const sub = !list.length ? "" : list.length === 1 ? (list[0].model && list[0].model.toLowerCase() !== list[0].name.toLowerCase() ? list[0].model : "")
       : `${list.length} imprimantes · ${nAlert ? `${nAlert} à surveiller` : "tout va bien"}`;
 
     let body = "";
