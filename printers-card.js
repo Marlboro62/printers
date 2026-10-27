@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.5-beta";
+const CARD_VERSION = "0.1.6-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -424,9 +424,16 @@ class PrintersCard extends HTMLElement {
       const last = !active ? this._lastJob(p.id) : null;
       if (last && (!j || !j.file || j.file === last.file)) {
         // fin d'impression vue par la carte : résultat, heure, barre pleine si terminée
-        if (["complete", "cancelled", "error"].includes(status) && !last.result) this._keep(p.id, { ...last, result: status, ended: Date.now() });
+        // heure de fin : changement d'état vu par Home Assistant (la carte a pu être ouverte plus tard)
+        if (["complete", "cancelled", "error"].includes(status) && !last.result) {
+          const at = Date.parse(this._st(r.state)?.last_changed || "");
+          this._keep(p.id, { ...last, result: status, ended: Number.isFinite(at) ? at : Date.now() });
+        }
         const l = this._lastJob(p.id);
-        j = { ...l, ...(j || {}), thumb: j?.thumb || l.thumbData || null, pct: l.result === "complete" ? 100 : (j?.pct ?? l.pct),
+        // valeurs gardées pendant l'impression : Moonraker remet durée et couche à 0 à la fin
+        const pick = (k) => (l[k] !== null && l[k] !== undefined && l[k] !== 0 ? l[k] : j?.[k] ?? null);
+        j = { ...l, file: l.file || j?.file, elapsed: pick("elapsed"), layer: pick("layer"), layers: pick("layers"), filament: pick("filament"),
+          thumb: j?.thumb || l.thumbData || null, pct: l.result === "complete" ? 100 : pick("pct"),
           cls: { complete: "ok", cancelled: "warn", error: "bad" }[l.result] || "ok" };
       }
       if (c.show_job !== false && j) {
