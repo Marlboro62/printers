@@ -1,5 +1,5 @@
 {
-  "name": "Cartes Imprimantes",
+  "name": "Cartes Imprimantes 3D et bureau",
   "filename": "printers-card.js",
   "render_readme": true,
   "homeassistant": "2024.1.0"

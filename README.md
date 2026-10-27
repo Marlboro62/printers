@@ -26,7 +26,7 @@
   ></a>
 </div>
 
-# Cartes Imprimantes
+# Cartes Imprimantes 3D et bureau
 
 **Deux cartes Lovelace indépendantes, dans un seul fichier**, pour suivre vos imprimantes dans Home Assistant :
 
@@ -86,7 +86,7 @@ Si votre intégration n'est pas bien reconnue, ouvrez une [issue](https://github
 
 1. Dans HACS, menu **⋮** → **Dépôts personnalisés**.
 2. Ajoutez `https://github.com/Marlboro62/printers` avec le type **Tableau de bord** (Dashboard).
-3. Cherchez **Cartes Imprimantes**, installez, puis rechargez la page (Ctrl+F5).
+3. Cherchez **Cartes Imprimantes 3D et bureau**, installez, puis rechargez la page (Ctrl+F5).
 
 ### Manuellement
 
