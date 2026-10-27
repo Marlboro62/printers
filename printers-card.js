@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.3.3";
+const CARD_VERSION = "0.3.4-beta.1";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -977,14 +977,28 @@ class PrintersOfficeCard extends HTMLElement {
     if (!s && !p.supplies.some((id) => this._num(id) !== null)) return { key: "offline", msg: null, cls: "off" };
     const a = s?.attributes || {};
     let key = s ? officeNorm(s.state) : "idle";
-    const raw = [a.state_reason, a.state_message, s && officeNorm(s.state) === "error" ? s.state : null].filter((x) => x && x !== "none").join(" ");
-    const reason = REASONS.find(([re]) => re.test(raw));
-    let msg = reason ? reason[1] : (a.state_message && a.state_message !== "none" ? a.state_message : null);
+    // Raisons IPP (printer-state-reasons) : le suffixe donne la gravité. « -report » n'est qu'une information
+    // (ex. bac photo vide alors que le bac principal a du papier) : ignorée. « -warning » : à surveiller.
+    // « -error » ou sans suffixe : erreur seulement si l'imprimante est arrêtée, sinon à surveiller.
+    const tokens = [a.state_reason, s && officeNorm(s.state) === "error" ? s.state : null]
+      .flatMap((x) => (Array.isArray(x) ? x : String(x ?? "").split(/[\s,;]+/))).map((x) => String(x).trim()).filter((x) => x && x !== "none");
+    let reason = null, sev = 0;
+    for (const t of tokens) {
+      const r = REASONS.find(([re]) => re.test(t));
+      if (!r) continue;
+      const level = /-report$/i.test(t) ? 0 : /-warning$/i.test(t) ? 1 : r[2] === "bad" ? 2 : r[2] === "warn" ? 1 : 0;
+      if (level > sev || (!reason && level === 0 && r[2] === "ok")) { reason = [r[1], level === 2 ? "bad" : level === 1 ? "warn" : r[2]]; sev = level; }
+    }
+    // message libre de l'imprimante (state_message), sans gravité propre
+    const freeMsg = a.state_message && a.state_message !== "none" ? String(a.state_message) : null;
+    if (!reason && freeMsg) { const r = REASONS.find(([re]) => re.test(freeMsg)); if (r) reason = [r[1], r[2] === "bad" ? "warn" : r[2]]; }
+    let msg = reason ? reason[0] : freeMsg;
     let cls = OFFICE_STATE[key][2];
     if (reason) {
-      if (reason[2] === "bad" && key !== "offline") { key = key === "printing" ? key : "error"; cls = "bad"; }
-      else if (reason[2] === "warn" && cls === "ok") cls = "warn";
-      else if (reason[2] === "ok" && key === "idle") key = "sleep";
+      const stopped = key === "stopped" || key === "error";
+      if (reason[1] === "bad" && key !== "offline" && (stopped || tokens.some((t) => /-error$/i.test(t)) && key !== "idle")) { key = key === "printing" ? key : "error"; cls = "bad"; }
+      else if ((reason[1] === "bad" || reason[1] === "warn") && key !== "offline") cls = cls === "bad" ? cls : "warn";
+      else if (reason[1] === "ok" && key === "idle") key = "sleep";
     }
     if (key === "offline") cls = "off";
     return { key, msg, cls };
