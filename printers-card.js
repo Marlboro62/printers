@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.7-beta";
+const CARD_VERSION = "0.1.8-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -294,7 +294,11 @@ class PrintersCard extends HTMLElement {
   /** Garde l'impression en cours ; la miniature est copiée une fois par fichier (son lien expire). */
   _keep(id, j) {
     const prev = this._lastJob(id);
-    const next = { file: j.file, pct: j.pct, elapsed: j.elapsed, layer: j.layer, layers: j.layers, filament: j.filament,
+    // même impression : une valeur absente ou remise à 0 un instant ne remplace pas la précédente
+    const same = prev && prev.file === j.file && !prev.result;
+    const most = (k) => (same ? Math.max(Number(prev[k]) || 0, Number(j[k]) || 0) || null : j[k] ?? null);
+    const next = { file: j.file, pct: j.pct ?? (same ? prev.pct : null), elapsed: most("elapsed"), layer: most("layer"),
+      layers: j.layers ?? (same ? prev.layers : null), filament: most("filament"),
       result: j.result || null, ended: j.ended || null, thumbData: prev?.file === j.file ? prev.thumbData : null };
     if (prev && JSON.stringify({ ...prev, pct: Math.round(prev.pct || 0), elapsed: Math.round((prev.elapsed || 0) / 60) })
       === JSON.stringify({ ...next, pct: Math.round(next.pct || 0), elapsed: Math.round((next.elapsed || 0) / 60) })) return;
@@ -313,6 +317,47 @@ class PrintersCard extends HTMLElement {
         }
       }).catch(() => {}).finally(() => { this._thumbBusy = false; });
     }
+  }
+
+  /**
+   * Durée, filament et couche d'une impression terminée, lus dans l'historique de Home Assistant
+   * (depuis le dernier passage en impression), quand la carte n'a pas vu l'impression.
+   */
+  _hist(p, endedAt) {
+    const r = p.roles, key = `${p.id}|${endedAt}`;
+    this._histC ||= {};
+    if (key in this._histC) return this._histC[key];
+    this._histC[key] = null;
+    const ids = [r.state, r.elapsed, r.filament, r.layer].filter(Boolean);
+    if (!r.state || ids.length < 2 || !this._hass?.callApi) return null;
+    const from = new Date(endedAt - 2 * 86400e3).toISOString(), to = new Date(endedAt + 60e3).toISOString();
+    this._hass.callApi("GET", `history/period/${from}?filter_entity_id=${ids.join(",")}&end_time=${encodeURIComponent(to)}&minimal_response&no_attributes`)
+      .then((res) => {
+        const series = {};
+        for (const ser of res || []) if (ser?.[0]?.entity_id) series[ser[0].entity_id] = ser;
+        // début de l'impression : dernier passage en « printing » avant la fin
+        let begin = endedAt - 2 * 86400e3;
+        for (const pt of series[r.state] || []) {
+          const t = Date.parse(pt.last_changed);
+          if (norm(pt.state) === "printing" && t < endedAt) begin = Math.max(begin, t);
+        }
+        const unit = { s: 1, sec: 1, min: 60, h: 3600, d: 86400 }[String(this._st(r.elapsed)?.attributes?.unit_of_measurement || "s").toLowerCase()] || 1;
+        // durées en secondes : nombre dans l'unité du capteur, ou texte « 1h 2m 3s »
+        const most = (id, u = 1, isDur = false) => {
+          let m = null;
+          for (const pt of series[id] || []) {
+            if (Date.parse(pt.last_changed) < begin - 60e3) continue;
+            const v = Number.isFinite(Number(pt.state)) ? Number(pt.state) * u : isDur ? parseHms(pt.state) : null;
+            if (v !== null && Number.isFinite(v) && (m === null || v > m)) m = v;
+          }
+          return m;
+        };
+        this._histC[key] = { elapsed: most(r.elapsed, unit, true), filament: most(r.filament), layer: most(r.layer) };
+        this._sig = null;
+        this._render();
+      })
+      .catch(() => {});
+    return null;
   }
 
   /** Imprimantes : une par appareil, Ethernet et Wi-Fi fusionnés (la connexion qui répond est gardée). */
@@ -421,22 +466,26 @@ class PrintersCard extends HTMLElement {
           filament: this._num(r.filament), speed: this._num(r.speed), thumb: this._st(r.thumbnail)?.attributes?.entity_picture, cls: stCls };
         if (active) this._keep(p.id, j);
       }
-      const last = !active ? this._lastJob(p.id) : null;
-      if (last && (!j || !j.file || j.file === last.file)) {
-        // fin d'impression vue par la carte : résultat, heure, barre pleine si terminée
-        // heure de fin : changement d'état vu par Home Assistant (la carte a pu être ouverte plus tard)
-        if (["complete", "cancelled", "error"].includes(status) && !last.result) {
-          const at = Date.parse(this._st(r.state)?.last_changed || "");
-          this._keep(p.id, { ...last, result: status, ended: Number.isFinite(at) ? at : Date.now() });
-        }
-        const l = this._lastJob(p.id);
-        // fin d'impression réussie : dernière couche atteinte (le G-code de fin remonte la buse et fait monter la couche)
-        if (l.result === "complete" && l.layers) l.layer = l.layers;
-        // valeurs gardées pendant l'impression : Moonraker remet durée et couche à 0 à la fin
-        const pick = (k) => (l[k] !== null && l[k] !== undefined && l[k] !== 0 ? l[k] : j?.[k] ?? null);
-        j = { ...l, file: l.file || j?.file, elapsed: pick("elapsed"), layer: pick("layer"), layers: pick("layers"), filament: pick("filament"),
-          thumb: j?.thumb || l.thumbData || null, pct: l.result === "complete" ? 100 : pick("pct"),
-          cls: { complete: "ok", cancelled: "warn", error: "bad" }[l.result] || "ok" };
+      const done = ["complete", "cancelled", "error"].includes(status);
+      // heure de fin : changement d'état vu par Home Assistant (la carte a pu être ouverte plus tard)
+      const endedAt = done ? Date.parse(this._st(r.state)?.last_changed || "") : NaN;
+      let last = !active ? this._lastJob(p.id) : null;
+      if (last && j?.file && last.file && j.file !== last.file) last = null;
+      if (last && done && !last.result) {
+        this._keep(p.id, { ...last, result: status, ended: Number.isFinite(endedAt) ? endedAt : Date.now() });
+        last = this._lastJob(p.id);
+      }
+      if (!active && (last || j)) {
+        const l = last || {};
+        // Moonraker remet durée et couche à 0 à la fin : valeurs gardées par la carte, sinon historique de Home Assistant
+        const h = done && Number.isFinite(endedAt) ? this._hist(p, endedAt) : null;
+        const val = (k) => [l[k], h?.[k], j?.[k]].find((v) => v !== null && v !== undefined && v !== 0) ?? null;
+        const result = l.result || (done ? status : null);
+        j = { ...l, file: l.file || j?.file, elapsed: val("elapsed"), layer: val("layer"), layers: val("layers"), filament: val("filament"),
+          thumb: j?.thumb || l.thumbData || null, result, ended: l.ended || (Number.isFinite(endedAt) ? endedAt : null),
+          pct: result === "complete" ? 100 : val("pct"), cls: { complete: "ok", cancelled: "warn", error: "bad" }[result] || "ok" };
+        // impression réussie : dernière couche atteinte (le G-code de fin remonte la buse et fait monter la couche)
+        if (result === "complete" && j.layers) j.layer = j.layers;
       }
       if (c.show_job !== false && j) {
         const pct = j.pct;
