@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.0-beta";
+const CARD_VERSION = "0.1.1-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -251,7 +251,9 @@ class PrintersCard extends HTMLElement {
       const dev = devs[d.id] || {};
       d.devName = dev.name_by_user || dev.name || PLATFORMS[d.platform];
       d.name = d.devName.replace(LINK, "").trim() || d.devName;
-      d.model = [dev.manufacturer, dev.model].filter(Boolean).join(" ");
+      // fabricant et modèle, sans répétition ni simple nom de l'intégration (« moonraker moonraker »)
+      const parts = [dev.manufacturer, dev.model].filter(Boolean).filter((v, i, a) => a.findIndex((x) => x.toLowerCase() === v.toLowerCase()) === i);
+      d.model = parts.filter((v) => !Object.keys(PLATFORMS).includes(v.toLowerCase().replace(/\s+/g, "_"))).join(" ");
     }
     // regroupe les doublons (même nom sans « Ethernet » / « WIFI »)
     const groups = {};
