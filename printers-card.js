@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.3-beta";
+const CARD_VERSION = "0.1.4-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -463,7 +463,7 @@ class PrintersCard extends HTMLElement {
         const label = /frame/i.test(raw) ? "Lumière cadre" : /part|nozzle|tool/i.test(raw) ? "Lumière buse" : /light|led|lumi/i.test(raw) ? "Lumière" : raw.replace(/_/g, " ");
         return `<button class="pc-btn tog ${s.state === "on" ? "on" : ""}" data-toggle="${esc(id)}" title="${esc(label)} : ${s.state === "on" ? "éteindre" : "allumer"}"><ha-icon icon="${s.state === "on" ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"></ha-icon><span>${esc(label)}</span></button>`;
       }).filter(Boolean);
-      const ctlHtml = ctl.length || outs.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:gesture-tap-button"></ha-icon>Commandes</div><div class="pc-btns">${ctl.join("")}${outs.join("")}</div></div>` : "";
+      const ctlHtml = ctl.length || outs.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:gesture-tap-button"></ha-icon>Commandes</div>${ctl.length ? `<div class="pc-btns">${ctl.join("")}</div>` : ""}${outs.length ? `<div class="pc-btns pc-outs">${outs.join("")}</div>` : ""}</div>` : "";
 
       // --- statistiques
       const tot = this._secs(r.total_time), lng = this._secs(r.longest), fil = this._num(r.total_filament), jobs = this._num(r.jobs);
@@ -559,6 +559,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-btn { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 6px 10px;
   border-radius: 12px; border: 1px solid var(--med-line); background: var(--med-surface); font-size: .8rem; font-weight: 600; text-align: center; }
 .pc-btn ha-icon { --mdc-icon-size: 18px; flex: none; }
+.pc-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-outs { margin-top: 6px; }
 .pc-btn:hover { border-color: var(--med-blue); } .pc-btn:focus-visible { outline: 2px solid var(--med-blue); }
 .pc-btn.go { color: var(--med-down); border-color: color-mix(in srgb, var(--med-down) 45%, transparent); }
 .pc-btn.warn { color: var(--pc-warn); border-color: color-mix(in srgb, var(--pc-warn) 45%, transparent); }
