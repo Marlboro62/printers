@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imprimantes 3D · démo</title>
+<meta name="description" content="Démonstration de la carte Lovelace Imprimantes 3D avec des données simulées.">
+<style>
+  :root {
+    --bg: #0f1724; --panel: #172133; --line: #2a3850; --text: #e7edf5; --muted: #8fa0b8;
+    --accent: #96d21f; --accent2: #1d93e3; --btn: #1e2a3f; --btn-on: #2b3d5c;
+    /* Variables lues par les cartes en mode « Thème Home Assistant » */
+    --card-background-color: #1c1c1c; --primary-text-color: #e1e1e1;
+    --secondary-text-color: #9b9b9b; --divider-color: rgba(225, 225, 225, .12);
+    --ha-card-border-radius: 12px;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef2f7; --panel: #ffffff; --line: #d6dde8; --text: #1b2433; --muted: #5b6b82;
+    --accent: #4c8a0b; --accent2: #1673b8; --btn: #f2f5f9; --btn-on: #dde7f5;
+    --card-background-color: #ffffff; --primary-text-color: #212121;
+    --secondary-text-color: #727272; --divider-color: rgba(0, 0, 0, .12);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--accent2); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 16px 48px; }
+  .top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .top svg { width: 44px; height: 44px; fill: none; flex: none; }
+  .top .house { stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+  .top .bolt { fill: var(--accent2); }
+  h1 { font-size: 1.5rem; margin: 0; line-height: 1.2; }
+  .lead { margin: 2px 0 0; color: var(--muted); }
+  .badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: .75rem;
+    font-weight: 600; background: var(--btn-on); color: var(--text); vertical-align: middle; }
+  .links { margin-left: auto; display: flex; gap: 14px; font-size: .9rem; }
+
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .links { margin-left: 0; } .stage { order: -1; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .panel h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .panel h2 + .ctl { margin-top: 0; }
+  .panel h2:not(:first-child) { margin-top: 18px; }
+  .ctl { margin-bottom: 14px; }
+  .ctl:last-child { margin-bottom: 0; }
+  .ctl-l { font-size: .85rem; margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; font-size: .82rem; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--btn); color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--btn-on); border-color: var(--accent2); font-weight: 600; }
+  .seg button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+  .seg .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .sw.blue { background: #3f7ff0; } .sw.white { background: #e9eef4; box-shadow: inset 0 0 0 1px #9aa6b6; }
+  .sw.red { background: #ee4a4a; } .sw.green { background: #5fcf8a; } .sw.orange { background: #f0a33a; }
+
+  .stage { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .frame { margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 12px; transition: max-width .25s ease; }
+  .frame[data-width="mobile"] { max-width: 440px; }
+  .frame[data-width="large"] { max-width: 760px; }
+  .hint { font-size: .82rem; color: var(--muted); text-align: center; margin: 0; }
+
+  pre { margin: 0; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line);
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; }
+  .yaml-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .yaml-h h2 { margin: 0; }
+  .copy { font: inherit; font-size: .8rem; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--btn); color: var(--text); }
+  [hidden] { display: none !important; }
+  .note { font-size: .82rem; color: var(--muted); margin: 18px 0 0; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 16px; border-radius: 10px;
+    background: var(--panel); border: 1px solid var(--accent2); font-size: .88rem; box-shadow: 0 6px 24px rgba(0,0,0,.3);
+    opacity: 0; pointer-events: none; transition: opacity .2s; max-width: calc(100% - 32px); }
+  .toast.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .frame, .toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="22" height="22" rx="4" fill="none" stroke="var(--accent)" stroke-width="2.4"/><path d="M11 21h10M14 10h4l-1 6h-2z" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    <div>
+      <h1>Carte Imprimantes 3D <span class="badge" id="ver">démo</span></h1>
+      <p class="lead">Moonraker, OctoPrint, PrusaLink, Bambu Lab · données simulées, sans Home Assistant</p>
+    </div>
+    <nav class="links">
+      <a href="https://github.com/Marlboro62/printers">Dépôt GitHub</a>
+      <a href="https://github.com/Marlboro62/printers#installation">Installation</a>
+    </nav>
+  </header>
+
+  <div class="grid">
+    <aside class="panel" aria-label="Réglages de la démo">
+      <h2>Affichage</h2>
+      <div class="ctl"><div class="ctl-l">Page</div><div class="seg" data-key="page">
+        <button data-v="dark">Sombre</button><button data-v="light">Clair</button></div></div>
+      <div class="ctl"><div class="ctl-l">Couleurs de la carte (<code>theme</code>)</div><div class="seg" data-key="theme">
+        <button data-v="v2">MyElectricalData</button><button data-v="auto">MyElectricalData auto</button><button data-v="ha">Thème Home Assistant</button></div></div>
+      <div class="ctl"><div class="ctl-l">Largeur</div><div class="seg" data-key="width">
+        <button data-v="mobile">Téléphone</button><button data-v="large">Tablette / PC</button></div></div>
+
+      <h2>Situation simulée</h2>
+      <div class="ctl"><div class="ctl-l">Imprimantes</div><div class="seg" data-key="count">
+        <button data-v="1">Une</button><button data-v="2">Deux</button></div></div>
+      <div class="ctl"><div class="ctl-l">Voron 2.4 (Klipper, Moonraker)</div><div class="seg" data-key="job">
+        <button data-v="printing"><i class="sw green"></i>Impression</button><button data-v="paused"><i class="sw orange"></i>En pause</button>
+        <button data-v="complete"><i class="sw green"></i>Terminée</button><button data-v="error"><i class="sw red"></i>Erreur</button>
+        <button data-v="idle"><i class="sw"></i>Prête</button><button data-v="offline"><i class="sw"></i>Éteinte</button></div></div>
+    </aside>
+
+    <main class="stage">
+      <div class="frame" id="frame"></div>
+      <p class="hint">La carte réagit comme dans Home Assistant : changez d'onglet, cliquez sur « Pause » ou deux fois sur « Annuler », allumez la lumière. Rien n'est envoyé : la démo l'indique seulement.</p>
+      <section class="panel">
+        <div class="yaml-h"><h2>Configuration</h2><button class="copy" id="copy">Copier</button></div>
+        <pre id="yaml"></pre>
+      </section>
+    </main>
+  </div>
+
+  <p class="note">Les imprimantes, fichiers et chiffres sont simulés. Dans Home Assistant, la carte trouve vos imprimantes
+    automatiquement : voir le <a href="https://github.com/Marlboro62/printers#readme">README</a>.</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- La carte, telle qu'elle est publiée dans le dépôt -->
+<script src="../printers-card.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  /* Home Assistant fournit <ha-card> et <ha-icon>. Ici, <ha-icon> affiche les icônes Material Design Icons. */
+  if (!customElements.get("ha-card")) {
+    customElements.define("ha-card", class extends HTMLElement {
+      constructor() { super(); this.attachShadow({ mode: "open" }).innerHTML = "<style>:host{display:block}</style><slot></slot>"; }
+    });
+  }
+  if (!customElements.get("ha-icon")) {
+    customElements.define("ha-icon", class extends HTMLElement {
+      static get observedAttributes() { return ["icon"]; }
+      connectedCallback() { this._draw(); }
+      attributeChangedCallback() { this._draw(); }
+      _draw() {
+        const name = (this.getAttribute("icon") || "").replace(/^mdi:/, "");
+        if (!name) return;
+        const url = `https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/${name}.svg`;
+        this.style.cssText += `;display:inline-block;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);flex:none;` +
+          `background:currentColor;-webkit-mask:url(${url}) center/contain no-repeat;mask:url(${url}) center/contain no-repeat;`;
+      }
+    });
+  }
+
+  const defaults = { page: "dark", theme: "v2", width: "mobile", count: "2", job: "printing" };
+  let state = { ...defaults };
+  try { state = { ...defaults, ...JSON.parse(localStorage.getItem("printers-card-demo") || "{}") }; } catch (e) { /* ignoré */ }
+
+  const svg = (s) => "data:image/svg+xml," + encodeURIComponent(s);
+  /* Aperçus des fichiers (dessinés ici, comme les miniatures fournies par le trancheur) */
+  const THUMB_VASE = svg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#1d93e3"/><stop offset="1" stop-color="#7cc4f5"/></linearGradient></defs>
+    <path d="M36 14h28l-4 12c10 8 14 20 14 32 0 16-10 28-24 28S26 74 26 58c0-12 4-24 14-32z" fill="url(#g)"/><g stroke="#0f5f99" stroke-opacity=".35">${Array.from({ length: 14 }, (_, i) => `<line x1="20" x2="80" y1="${22 + i * 5}" y2="${22 + i * 5}"/>`).join("")}</g></svg>`);
+  const THUMB_BOX = svg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 18 84 34v34L50 84 16 68V34z" fill="#f08a4b"/><path d="M50 18 84 34 50 50 16 34z" fill="#f7b27f"/><path d="M50 50v34L16 68V34z" fill="#c9672f"/></svg>`);
+  /* Image de la caméra : un plateau vu de face, avec la pièce en cours */
+  const camera = (h, light) => svg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><rect width="320" height="180" fill="${light ? "#3a3f48" : "#15181d"}"/>
+    <rect x="30" y="20" width="260" height="10" fill="#555c66"/><rect x="${118 + (Date.now() / 400 % 60)}" y="30" width="26" height="30" rx="3" fill="#2b2f36"/><path d="M${126 + (Date.now() / 400 % 60)} 60h10l-5 8z" fill="#c9a227"/>
+    <rect x="40" y="150" width="240" height="10" fill="#2a2d33"/><rect x="40" y="146" width="240" height="4" fill="#3d434c"/>
+    <rect x="138" y="${146 - h}" width="44" height="${h}" rx="2" fill="#1d93e3" opacity=".9"/>
+    <text x="10" y="172" font-family="monospace" font-size="10" fill="#8fa0b8">CAM 1</text></svg>`);
+
+  const H = 3600, NOW = Date.now();
+  function build() {
+    const st = {}, ent = {}, devices = {};
+    const add = (dev, platform, id, state, attrs = {}) => {
+      st[id] = { entity_id: id, state: String(state), attributes: attrs };
+      ent[id] = { entity_id: id, platform, device_id: dev };
+    };
+
+    // Voron 2.4 (Moonraker), déclarée deux fois : Ethernet (qui répond) et Wi-Fi (débranché)
+    const j = state.job, active = j === "printing" || j === "paused";
+    const pct = { printing: 62, paused: 41, complete: 100, error: 18, idle: 100, offline: null }[j];
+    for (const [dev, link, alive] of [["v-eth", "Ethernet", j !== "offline"], ["v-wifi", "WIFI", false]]) {
+      devices[dev] = { id: dev, name: `Voron 2.4 ${link}`, manufacturer: "Klipper", model: "Moonraker" };
+      const p = `voron_2_4_${link.toLowerCase()}`;
+      const s = (k, v, u) => add(dev, "moonraker", `sensor.${p}_${k}`, alive ? v : "unavailable", u ? { unit_of_measurement: u } : {});
+      const n = (k, v, u) => add(dev, "moonraker", `number.${p}_${k}`, alive ? v : "unavailable", u ? { unit_of_measurement: u } : {});
+      s("current_print_state", { printing: "printing", paused: "paused", complete: "complete", error: "error", idle: "standby", offline: "standby" }[j]);
+      s("printer_state", j === "error" ? "error" : "ready");
+      s("printer_message", j === "error" ? "MCU 'mcu' shutdown: Timer too close" : j === "paused" ? "Changement de filament" : "Printer is ready");
+      s("progress", pct, "%");
+      s("filename", j === "idle" ? "support_casque.gcode" : "vase_spirale_200mm.gcode");
+      s("print_duration", { printing: 214, paused: 131, complete: 352, error: 47, idle: 96, offline: 0 }[j], "min");
+      s("print_time_left", { printing: 2.3, paused: 3.6, complete: 0, error: 0, idle: 0, offline: 0 }[j], "h");
+      s("print_eta", j === "printing" ? new Date(NOW + 2.3 * H * 1000).toISOString() : "unknown");
+      s("current_layer", Math.round((pct ?? 0) * 6.4)); s("total_layer", 640);
+      s("filament_used", { printing: 18.4, paused: 12.1, complete: 29.6, error: 4.2, idle: 7.8, offline: 0 }[j], "m");
+      s("print_speed", j === "printing" ? 182 : 0, "mm/s");
+      s("extruder_temperature", active || j === "error" ? (j === "paused" ? 175.2 : 244.6) : 27.3, "°C");
+      s("bed_temperature", active ? 99.4 : j === "error" ? 81.0 : 26.8, "°C");
+      s("extruder_power", active ? 38 : 0, "%"); s("bed_power", active ? 21 : 0, "%");
+      s("rockchiphost_temp", 46.2, "°C"); s("stm32mcu_temp", 38.9, "°C");
+      s("totals_jobs", 412); s("totals_print_time", "1374h 12m 05s"); s("totals_filament_used", 18240, "m"); s("longest_print", "27h 41m 10s");
+      n("extruder_target", active && j === "printing" ? 245 : j === "paused" ? 175 : 0, "°C");
+      n("bed_target", active ? 100 : 0, "°C");
+      n("fan_speed", j === "printing" ? 60 : 0, "%");
+      for (const b of ["pause_print", "resume_print", "cancel_print", "emergency_stop", "home_all_axes"]) add(dev, "moonraker", `button.${p}_${b}`, alive ? "unknown" : "unavailable");
+      add(dev, "moonraker", `switch.${p}_output_pin_frame_light`, alive ? (state.light ?? "on") : "unavailable", { friendly_name: `Voron 2.4 ${link} output_pin frame_light` });
+      add(dev, "moonraker", `camera.${p}_thumbnail`, alive ? "idle" : "unavailable", { entity_picture: THUMB_VASE });
+      add(dev, "moonraker", `camera.${p}_webcam`, alive ? "idle" : "unavailable", { entity_picture: camera(active ? pct * 1.1 : j === "complete" ? 110 : 0, false) });
+    }
+
+    // Seconde imprimante (PrusaLink), au repos après une impression
+    if (state.count === "2") {
+      devices.mk = { id: "mk", name: "Prusa MK4", manufacturer: "Prusa", model: "MK4" };
+      const a = (dom, k, v, u) => add("mk", "prusalink", `${dom}.prusa_mk4_${k}`, v, u ? { unit_of_measurement: u } : {});
+      a("sensor", "print_status", "finished"); a("sensor", "progress", 100, "%"); a("sensor", "filename", "boite_rangement_vis.bgcode");
+      a("sensor", "print_duration", 5460, "s"); a("sensor", "nozzle_temperature", 31.4, "°C"); a("sensor", "heatbed_temperature", 29.8, "°C");
+      a("button", "stop_job", "unknown"); a("button", "pause_job", "unknown");
+      add("mk", "prusalink", "camera.prusa_mk4_preview", "idle", { entity_picture: THUMB_BOX });
+    }
+    return { st, ent, devices };
+  }
+
+  function config() {
+    return { type: "custom:printers-card", theme: state.theme };
+  }
+
+  const frame = document.getElementById("frame");
+  const toast = document.getElementById("toast");
+  let toastTimer;
+  function hass() {
+    const { st, ent, devices } = build();
+    return {
+      states: st, entities: ent, devices, themes: { darkMode: state.page === "dark" }, language: "fr",
+      callService: (domain, service, data) => {
+        if (domain === "switch") { state.light = (state.light ?? "on") === "on" ? "off" : "on"; render(); }
+        toast.textContent = `Démo : ${domain}.${service} sur ${data?.entity_id || ""} (rien n'est envoyé ici).`;
+        toast.classList.add("on");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("on"), 2800);
+      },
+    };
+  }
+
+  function render() {
+    document.documentElement.dataset.theme = state.page;
+    frame.dataset.width = state.width;
+    document.querySelectorAll(".seg").forEach((seg) => seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === state[seg.dataset.key]))));
+    const c = config();
+    document.getElementById("yaml").textContent = `type: ${c.type}\ntheme: ${c.theme}`;
+    if (!customElements.get("printers-card")) return;
+    let el = frame.firstElementChild;
+    if (!el) { el = document.createElement("printers-card"); frame.append(el); }
+    el.setConfig(c);
+    el.hass = hass();
+  }
+
+  document.querySelectorAll(".seg").forEach((seg) => seg.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    state[seg.dataset.key] = b.dataset.v;
+    try { localStorage.setItem("printers-card-demo", JSON.stringify({ ...state, light: undefined })); } catch (e) { /* ignoré */ }
+    render();
+  }));
+
+  document.getElementById("copy").addEventListener("click", async (ev) => {
+    try { await navigator.clipboard.writeText(document.getElementById("yaml").textContent); ev.target.textContent = "Copié ✓"; }
+    catch (e) { ev.target.textContent = "Sélectionnez le texte"; }
+    setTimeout(() => { ev.target.textContent = "Copier"; }, 1600);
+  });
+
+  fetch("../printers-card.js").then((r) => r.text()).then((t) => {
+    const m = /CARD_VERSION = "([^"]+)"/.exec(t);
+    if (m) document.getElementById("ver").textContent = `v${m[1]} · démo`;
+  }).catch(() => {});
+
+  render();
+  customElements.whenDefined("printers-card").then(render);
+})();
+</script>
+</body>
+</html>
