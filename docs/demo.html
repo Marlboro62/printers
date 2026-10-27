@@ -187,7 +187,7 @@
     const j = state.job, active = j === "printing" || j === "paused";
     const pct = { printing: 62, paused: 41, complete: 100, error: 18, idle: 100, offline: null }[j];
     for (const [dev, link, alive] of [["v-eth", "Ethernet", j !== "offline"], ["v-wifi", "WIFI", false]]) {
-      devices[dev] = { id: dev, name: `Voron 2.4 ${link}`, manufacturer: "Klipper", model: "Moonraker" };
+      devices[dev] = { id: dev, name: `Voron 2.4 ${link}`, manufacturer: "Klipper", model: "Moonraker", sw_version: "v0.12.0-354", configuration_url: link === "Ethernet" ? "http://192.0.2.40" : "http://192.0.2.41" };
       const p = `voron_2_4_${link.toLowerCase()}`;
       const s = (k, v, u) => add(dev, "moonraker", `sensor.${p}_${k}`, alive ? v : "unavailable", u ? { unit_of_measurement: u } : {});
       const n = (k, v, u) => add(dev, "moonraker", `number.${p}_${k}`, alive ? v : "unavailable", u ? { unit_of_measurement: u } : {});
@@ -228,13 +228,15 @@
     // Imprimantes de bureau : jet d'encre par IPP, laser couleur par l'intégration Brother
     const o = state.office;
     const addk = (dev, platform, id, v, attrs = {}, tk = null) => { add(dev, platform, id, v, attrs); ent[id].translation_key = tk; };
-    devices.hp = { id: "hp", name: "HP OfficeJet Pro 9010", manufacturer: "HP", model: "OfficeJet Pro 9010" };
+    devices.hp = { id: "hp", name: "HP OfficeJet Pro 9010", manufacturer: "HP", model: "OfficeJet Pro 9010", sw_version: "2405A", configuration_url: "http://192.0.2.31:631" };
     addk("hp", "ipp", "sensor.hp_officejet_pro_9010", o === "sleep" ? "idle" : o === "jam" ? "stopped" : "idle",
-      { state_reason: o === "jam" ? "media-jam-error" : o === "sleep" ? "sleep" : "none", state_message: "" }, "printer");
+      { state_reason: o === "jam" ? "media-jam-error" : o === "sleep" ? "sleep" : "none", state_message: "", uri_supported: "ipp://192.0.2.31:631/ipp/print" }, "printer");
     for (const [k, n, v] of [["black_ink", "Black ink", o === "low" ? 6 : 64], ["cyan_ink", "Cyan ink", 48], ["magenta_ink", "Magenta ink", o === "low" ? 12 : 71], ["yellow_ink", "Yellow ink", 35]])
       addk("hp", "ipp", `sensor.hp_officejet_pro_9010_${k}`, v, { unit_of_measurement: "%", friendly_name: `HP OfficeJet Pro 9010 ${n}`, marker_low_level: 10 }, "marker");
     addk("hp", "ipp", "sensor.hp_officejet_pro_9010_uptime", new Date(Date.now() - 3 * 86400e3 - 5 * 3600e3).toISOString(), {}, "uptime");
-    devices.br = { id: "br", name: "Brother HL-L3270CDW", manufacturer: "Brother", model: "HL-L3270CDW" };
+    devices.br = { id: "br", name: "Brother HL-L3270CDW", manufacturer: "Brother", model: "HL-L3270CDW", sw_version: "ZC", configuration_url: "http://192.0.2.32/" };
+    // mise à jour proposée par l'intégration (entité update de l'appareil)
+    add("br", "brother", "update.hl_l3270cdw_firmware", o === "low" ? "off" : "on", { title: "Micrologiciel", installed_version: "ZC", latest_version: "ZD", friendly_name: "Brother HL-L3270CDW Micrologiciel" });
     addk("br", "brother", "sensor.hl_l3270cdw_status", o === "sleep" ? "sleep" : "ready", {}, "status");
     for (const [c, v] of [["black", o === "low" ? 9 : 55], ["cyan", 80], ["magenta", 80], ["yellow", 70]])
       addk("br", "brother", `sensor.hl_l3270cdw_${c}_toner_remaining`, v, { unit_of_measurement: "%", friendly_name: `Brother HL-L3270CDW ${c} toner remaining` }, `${c}_toner_remaining`);

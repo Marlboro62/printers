@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.3.1-beta";
+const CARD_VERSION = "0.3.2-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -118,7 +118,7 @@ const DEFAULTS = {
   title: "",
   icon: "mdi:printer-3d",
   icon_color: "",
-  show_job: true, show_camera: true, show_temps: true, show_controls: true, show_stats: true,
+  show_job: true, show_camera: true, show_temps: true, show_controls: true, show_stats: true, show_device: true,
   camera_mode: "live", // live : vidéo en continu ; snapshot : une image toutes les camera_refresh secondes
   camera_refresh: 5, // secondes
   theme: "v2",
@@ -582,7 +582,8 @@ class PrintersCard extends HTMLElement {
       ].filter(Boolean) : [];
       const statsHtml = stats.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:chart-box-outline"></ha-icon>Statistiques</div><div class="pc-ss">${stats.join("")}</div></div>` : "";
 
-      body = tabs + `<div class="pc-sec">${state}</div>` + job + cam + tempsHtml + ctlHtml + statsHtml;
+      const devHtml = c.show_device !== false ? deviceBlock(this._hass, p.links || [p.id]) : "";
+      body = tabs + `<div class="pc-sec">${state}</div>` + job + cam + tempsHtml + ctlHtml + statsHtml + devHtml;
     }
 
     const alert = statuses.includes("error");
@@ -594,6 +595,42 @@ class PrintersCard extends HTMLElement {
     if (camShown) this._camMount(camShown);
     else this._camStop();
   }
+}
+
+/* ------------------------------------------------- appareil (commun aux deux cartes) */
+
+/** Adresse IP (ou nom) d'une imprimante : page de configuration de l'appareil, sinon adresse IPP. */
+const hostOf = (url) => { const m = /^[a-z][a-z0-9+.-]*:\/\/(\[[^\]]+\]|[^/:?#]+)/i.exec(String(url || "").trim()); return m ? m[1] : null; };
+
+/**
+ * Bloc « Appareil » : adresse IP avec lien vers la page de l'imprimante, micrologiciel, et mises à
+ * jour proposées par l'intégration (entités update de l'appareil).
+ */
+function deviceBlock(hass, devIds, extraUrls = []) {
+  const devs = devIds.map((id) => hass.devices?.[id]).filter(Boolean);
+  const dev = devs.find((d) => d.configuration_url) || devs[0];
+  if (!dev) return "";
+  const url = /^https?:\/\//i.test(dev.configuration_url || "") ? dev.configuration_url : null;
+  const host = hostOf(dev.configuration_url) || extraUrls.map(hostOf).find(Boolean) || null;
+  const sw = devs.map((d) => d.sw_version).find(Boolean);
+  const pills = [];
+  if (host) {
+    const inner = `<ha-icon icon="mdi:ip-network-outline"></ha-icon>Adresse <b>${esc(host)}</b>${url ? `<ha-icon class="po-ext" icon="mdi:open-in-new"></ha-icon>` : ""}`;
+    pills.push(url ? `<a class="pc-x po-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Ouvrir la page de l'imprimante">${inner}</a>` : `<span class="pc-x">${inner}</span>`);
+  }
+  const ups = Object.entries(hass.entities || {}).filter(([id, e]) => id.startsWith("update.") && devIds.includes(e.device_id) && !e.hidden && hass.states?.[id]).map(([id]) => id);
+  // version installée seule quand aucune entité de mise à jour ne la donne déjà
+  if (sw && !ups.length) pills.push(`<span class="pc-x"><ha-icon icon="mdi:chip"></ha-icon>Micrologiciel <b>${esc(sw)}</b></span>`);
+  for (const id of ups) {
+    const st = hass.states?.[id];
+    if (!st) continue;
+    const a = st.attributes || {}, name = String(a.title || a.friendly_name || "").replace(dev.name_by_user || dev.name || "", "").trim();
+    const what = name || "Micrologiciel";
+    pills.push(st.state === "on"
+      ? `<span class="pc-x po-upd" data-entity="${esc(id)}" title="Ouvrir pour installer la mise à jour"><ha-icon icon="mdi:package-up"></ha-icon>${esc(what)} : mise à jour <b>${esc(a.installed_version || "?")} → ${esc(a.latest_version || "?")}</b></span>`
+      : `<span class="pc-x" data-entity="${esc(id)}"><ha-icon icon="mdi:check-circle-outline"></ha-icon>${esc(what)} <b>${esc(a.installed_version || "")}</b> à jour</span>`);
+  }
+  return pills.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:information-outline"></ha-icon>Appareil</div><div class="pc-xs">${pills.join("")}</div></div>` : "";
 }
 
 /* ------------------------------------------------------------------ style */
@@ -677,6 +714,11 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-ss { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
 .pc-s { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--med-line); cursor: pointer; text-align: center; }
 .pc-s ha-icon { --mdc-icon-size: 18px; color: var(--med-blue); } .pc-s b { font-size: .95rem; } .pc-s span { font-size: .72rem; color: var(--med-muted); }
+a.po-link { text-decoration: none; color: var(--med-muted); }
+a.po-link:hover { border-color: var(--med-blue); } a.po-link:focus-visible { outline: 2px solid var(--med-blue); }
+.po-ext { --mdc-icon-size: 13px !important; opacity: .7; }
+.pc-x.po-upd { color: var(--pc-warn); border-color: color-mix(in srgb, var(--pc-warn) 50%, transparent); }
+.pc-x.po-upd b { color: var(--pc-warn); }
 .empty { padding: 18px; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; } .empty span { color: var(--med-muted); }
 ha-card.th-ha {
   --med-bg: var(--ha-card-background, var(--card-background-color, #fff));
@@ -710,6 +752,7 @@ const SCHEMA = [
   { name: "show_temps", selector: { boolean: {} } },
   { name: "show_controls", selector: { boolean: {} } },
   { name: "show_stats", selector: { boolean: {} } },
+  { name: "show_device", selector: { boolean: {} } },
   { name: "theme", selector: { select: { mode: "dropdown", options: [
     { value: "v2", label: "Style MyElectricalData (bleu nuit)" },
     { value: "auto", label: "Style MyElectricalData, clair ou sombre selon Home Assistant" },
@@ -728,6 +771,7 @@ const LABELS = {
   show_temps: "Températures",
   show_controls: "Commandes (pause, reprise, annulation, arrêt d'urgence, lumières)",
   show_stats: "Statistiques",
+  show_device: "Appareil (adresse IP, micrologiciel, mises à jour)",
   theme: "Couleurs de la carte",
 };
 class PrintersCardEditor extends HTMLElement {
@@ -835,7 +879,7 @@ const officeNorm = (s) => {
 const OFFICE_DEFAULTS = {
   title: "", icon: "mdi:printer", icon_color: "",
   low_level: 15, // % : seuil d'alerte des consommables
-  show_supplies: true, show_parts: true, show_counters: true,
+  show_supplies: true, show_parts: true, show_counters: true, show_device: true,
   theme: "v2",
 };
 
@@ -1034,7 +1078,9 @@ class PrintersOfficeCard extends HTMLElement {
       ].filter(Boolean) : [];
       const countHtml = counters.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:counter"></ha-icon>Compteurs</div><div class="pc-ss">${counters.join("")}</div></div>` : "";
 
-      body = tabs + state + supHtml + partsHtml + countHtml;
+      const uri = this._st(r.status)?.attributes?.uri_supported;
+      const devHtml = c.show_device !== false ? deviceBlock(this._hass, [p.id], Array.isArray(uri) ? uri : String(uri || "").split(/[,\s]+/)) : "";
+      body = tabs + state + supHtml + partsHtml + countHtml + devHtml;
     }
 
     const alert = infos.some((x) => x.st.cls === "bad");
@@ -1075,6 +1121,7 @@ const OFFICE_SCHEMA = [
   { name: "show_supplies", selector: { boolean: {} } },
   { name: "show_parts", selector: { boolean: {} } },
   { name: "show_counters", selector: { boolean: {} } },
+  { name: "show_device", selector: { boolean: {} } },
   SCHEMA.find((s) => s.name === "theme"),
 ];
 const OFFICE_LABELS = {
@@ -1086,6 +1133,7 @@ const OFFICE_LABELS = {
   show_supplies: "Encre et toner",
   show_parts: "Pièces d'usure (tambour, unité de fixation…)",
   show_counters: "Compteurs de pages",
+  show_device: "Appareil (adresse IP, micrologiciel, mises à jour)",
   theme: "Couleurs de la carte",
 };
 class PrintersOfficeCardEditor extends PrintersCardEditor {

@@ -114,6 +114,7 @@ La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprim
 - **Températures** : buse, plateau et caisson, avec la consigne et la puissance de chauffe, ou « Refroidissement » après l'impression ; températures de l'hôte et de la carte mère, ventilateur.
 - **Commandes** : pause, reprise, annulation, arrêt d'urgence, retour à l'origine et lumières. **Annuler, l'arrêt d'urgence et l'origine se confirment en deux clics** : le premier arme le bouton (coche orange qui pulse), le second dans les 5 secondes envoie la commande.
 - **Statistiques** : nombre d'impressions, temps total, filament total, plus longue impression.
+- **Appareil** : adresse IP de l'imprimante, avec un lien vers sa page d'administration, version du micrologiciel, et mise à jour disponible quand l'intégration en propose une (un clic ouvre la fenêtre d'installation de Home Assistant).
 
 Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 
@@ -127,7 +128,7 @@ Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 | `camera` | Caméra à afficher, à la place de celle de l'imprimante | caméra de l'imprimante |
 | `camera_mode` | `live` (vidéo en direct) ou `snapshot` (image par image) | `live` |
 | `camera_refresh` | Rafraîchissement en mode `snapshot` (secondes, 2 au minimum) | `5` |
-| `show_job`, `show_camera`, `show_temps`, `show_controls`, `show_stats` | Afficher chaque partie | `true` |
+| `show_job`, `show_camera`, `show_temps`, `show_controls`, `show_stats`, `show_device` | Afficher chaque partie | `true` |
 | `theme` | `v2` (bleu nuit MyElectricalData), `auto` (clair ou sombre selon Home Assistant) ou `ha` (thème Home Assistant) | `v2` |
 
 Exemple avec deux imprimantes, un nom et une caméra choisis :
@@ -158,6 +159,7 @@ La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprim
 - **Encre ou toner** : une jauge par cartouche, à sa couleur (noir, cyan, magenta, jaune, couleur, noir photo…), avec « Bas » ou « À remplacer » sous le seuil d'alerte (15 % par défaut, ou le seuil donné par l'imprimante).
 - **Pièces d'usure** (Brother) : tambour, unité de fixation, courroie, laser, kit papier, avec leur durée de vie restante.
 - **Compteurs** : pages imprimées, noir et blanc, couleur, recto verso, et durée depuis le dernier démarrage.
+- **Appareil** : adresse IP de l'imprimante, avec un lien vers sa page d'administration, version du micrologiciel, et mise à jour disponible quand l'intégration en propose une (un clic ouvre la fenêtre d'installation de Home Assistant).
 
 Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 
@@ -169,7 +171,7 @@ Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 | `icon`, `icon_color` | Icône et couleur de l'icône | `mdi:printer`, bleu |
 | `printers` | Imprimantes affichées, dans cet ordre : appareils, ou `{ device, name }` | toutes |
 | `low_level` | Seuil d'alerte de l'encre et du toner (%) | `15` |
-| `show_supplies`, `show_parts`, `show_counters` | Afficher chaque partie | `true` |
+| `show_supplies`, `show_parts`, `show_counters`, `show_device` | Afficher chaque partie | `true` |
 | `theme` | `v2`, `auto` ou `ha` | `v2` |
 
 ## Support
