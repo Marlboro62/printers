@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.1-beta";
+const CARD_VERSION = "0.1.2-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -118,6 +118,7 @@ const DEFAULTS = {
   icon: "mdi:printer-3d",
   icon_color: "",
   show_job: true, show_camera: true, show_temps: true, show_controls: true, show_stats: true,
+  camera_mode: "live", // live : vidéo en continu ; snapshot : une image toutes les camera_refresh secondes
   camera_refresh: 5, // secondes
   theme: "v2",
 };
@@ -183,17 +184,68 @@ class PrintersCard extends HTMLElement {
 
   connectedCallback() {
     clearInterval(this._tick);
-    // image de la caméra rafraîchie sans redessiner la carte ; le reste toutes les 30 s (temps restant)
+    // mode image par image : nouvelle image sans redessiner la carte ; le reste toutes les 30 s (temps restant)
     this._tick = setInterval(() => {
-      const img = this.shadowRoot?.querySelector("img.pc-cam");
-      if (img && img.dataset.src) img.src = `${img.dataset.src}${img.dataset.src.includes("?") ? "&" : "?"}_=${Date.now()}`;
+      if (this._camEl && this._camMode === "snapshot") this._camLoad(true);
       this._n = (this._n || 0) + 1;
       if (this._n % Math.max(1, Math.round(30 / this._refresh())) === 0) { this._sig = null; this._render(); }
     }, this._refresh() * 1000);
+    this._sig = null;
+    this._render();
   }
 
   disconnectedCallback() {
     clearInterval(this._tick);
+    this._camStop();
+  }
+
+  /** Coupe le flux de la caméra (carte masquée, changement d'onglet ou de caméra). */
+  _camStop() {
+    clearTimeout(this._camRetry);
+    if (this._camEl) { this._camEl.onerror = null; this._camEl.src = "data:,"; this._camEl.remove(); }
+    this._camEl = null;
+    this._camKey = null;
+  }
+
+  /**
+   * Charge l'image de la caméra. En direct : flux MJPEG de Home Assistant (/api/camera_proxy_stream),
+   * ouvert une seule fois puis gardé tant que la caméra ne change pas. Image par image : nouvelle
+   * image préchargée puis affichée d'un coup, sans écran noir.
+   */
+  _camLoad(next = false) {
+    const el = this._camEl, pic = this._st(this._camId)?.attributes?.entity_picture;
+    if (!el || !pic) return;
+    if (this._camMode === "live") {
+      el.src = pic.replace("/api/camera_proxy/", "/api/camera_proxy_stream/");
+      return;
+    }
+    const url = `${pic}${pic.includes("?") ? "&" : "?"}_=${Date.now()}`;
+    if (!next || !el.getAttribute("src")) { el.src = url; return; }
+    if (this._camBusy) return;
+    this._camBusy = true;
+    const pre = new Image();
+    pre.onload = () => { this._camBusy = false; if (this._camEl === el) el.src = url; };
+    pre.onerror = () => { this._camBusy = false; };
+    pre.src = url;
+  }
+
+  /** Place la caméra (élément gardé d'un rendu à l'autre) dans son emplacement. */
+  _camMount(camId) {
+    const slot = this.shadowRoot.querySelector(".pc-cam-slot");
+    if (!slot || !this.isConnected) { this._camStop(); return; }
+    const mode = this._config.camera_mode === "snapshot" ? "snapshot" : "live";
+    const key = `${camId}|${mode}`;
+    if (this._camKey !== key) {
+      this._camStop();
+      const img = document.createElement("img");
+      img.className = "pc-cam";
+      img.alt = "Caméra de l'imprimante";
+      // flux coupé (redémarrage, réseau) : nouvel essai dans 5 s avec un jeton à jour
+      img.onerror = () => { clearTimeout(this._camRetry); this._camRetry = setTimeout(() => this._camLoad(), 5000); };
+      this._camEl = img; this._camKey = key; this._camId = camId; this._camMode = mode;
+      this._camLoad();
+    }
+    slot.replaceWith(this._camEl);
   }
 
   _refresh() {
@@ -302,7 +354,7 @@ class PrintersCard extends HTMLElement {
     const sub = !list.length ? "" : list.length === 1 ? STATE[statuses[0]][0]
       : `${list.length} imprimantes · ${printing ? `${printing} en impression` : "au repos"}`;
 
-    let body = "";
+    let body = "", camShown = null;
     if (!p) {
       body = `<div class="empty">Aucune imprimante trouvée<span>Ajoutez l'intégration Moonraker (Klipper, via HACS), OctoPrint, PrusaLink ou Bambu Lab, puis rechargez la page.</span></div>`;
     } else {
@@ -353,9 +405,11 @@ class PrintersCard extends HTMLElement {
       // --- caméra
       const camId = p.camera || c.camera || p.cameras.find((id) => this._st(id)) || null;
       const camSt = this._st(camId);
-      const cam = c.show_camera !== false && camSt && camSt.attributes?.entity_picture && status !== "offline"
+      const camOn = c.show_camera !== false && camSt && camSt.attributes?.entity_picture && camSt.state !== "unavailable" && status !== "offline";
+      camShown = camOn ? camId : null;
+      const cam = camOn
         ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:webcam"></ha-icon>Caméra</div><div class="pc-camw" data-entity="${esc(camId)}">
-            <img class="pc-cam" data-src="${esc(camSt.attributes.entity_picture)}" src="${esc(camSt.attributes.entity_picture)}" alt="Caméra de l'imprimante"></div></div>` : "";
+            <div class="pc-cam-slot"></div></div></div>` : "";
 
       // --- températures
       const temp = (cur, tgtNum, tgtSensor, power, icon, label) => {
@@ -429,6 +483,8 @@ class PrintersCard extends HTMLElement {
         <div><div class="title">${esc(title)}</div><div class="sub">${esc(sub)}</div></div></div></header>
       ${body}
     </ha-card>`;
+    if (camShown) this._camMount(camShown);
+    else this._camStop();
   }
 }
 
@@ -535,6 +591,9 @@ const SCHEMA = [
   { name: "icon_color", selector: { text: {} } },
   { name: "printers", selector: { device: { multiple: true, filter: [{ integration: "moonraker" }, { integration: "octoprint" }, { integration: "prusalink" }, { integration: "bambu_lab" }] } } },
   { name: "camera", selector: { entity: { domain: "camera" } } },
+  { name: "camera_mode", selector: { select: { mode: "dropdown", options: [
+    { value: "live", label: "Vidéo en direct" },
+    { value: "snapshot", label: "Image par image (moins de réseau)" }] } } },
   { name: "camera_refresh", selector: { number: { min: 2, max: 60, mode: "box", unit_of_measurement: "s" } } },
   { name: "show_job", selector: { boolean: {} } },
   { name: "show_camera", selector: { boolean: {} } },
@@ -552,7 +611,8 @@ const LABELS = {
   icon_color: "Couleur de l'icône",
   printers: "Imprimantes affichées, dans cet ordre (vide = toutes)",
   camera: "Caméra (vide = celle de l'imprimante)",
-  camera_refresh: "Rafraîchissement de la caméra",
+  camera_mode: "Affichage de la caméra",
+  camera_refresh: "Rafraîchissement en mode image par image",
   show_job: "Impression en cours",
   show_camera: "Caméra",
   show_temps: "Températures",

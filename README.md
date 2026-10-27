@@ -57,7 +57,7 @@ La carte a un **éditeur visuel**. Sans réglage, elle affiche toutes les imprim
 - **Imprimante déclarée deux fois** (Ethernet et Wi-Fi) : un seul onglet. La carte garde la connexion qui répond, et l'Ethernet si les deux répondent.
 - **État** : prête, impression en cours, en pause, terminée, annulée, erreur, hors ligne, avec le message de l'imprimante (erreur Klipper, changement de filament…). La carte prend une bordure rouge en cas d'erreur.
 - **Impression** : aperçu du fichier (miniature du trancheur), nom, barre de progression, temps écoulé et restant, heure de fin prévue, couche, filament utilisé, vitesse. Après l'impression : « Dernière impression ».
-- **Caméra** : image rafraîchie toutes les 5 s (réglable), sans recharger la carte.
+- **Caméra** : vidéo en direct (flux de Home Assistant, ouvert une fois et gardé quand la carte se met à jour), ou image par image toutes les 5 s (réglable) pour économiser le réseau.
 - **Températures** : buse, plateau et caisson, avec la consigne et la puissance de chauffe ; températures de l'hôte et de la carte mère, ventilateur.
 - **Commandes** : pause, reprise, annulation, arrêt d'urgence, retour à l'origine et lumières. **Annuler, l'arrêt d'urgence et l'origine se confirment en deux clics** : le premier arme le bouton (coche orange qui pulse), le second dans les 5 secondes envoie la commande.
 - **Statistiques** : nombre d'impressions, temps total, filament total, plus longue impression.
@@ -72,7 +72,8 @@ Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 | `icon`, `icon_color` | Icône et couleur de l'icône | `mdi:printer-3d`, bleu |
 | `printers` | Imprimantes affichées, dans cet ordre : appareils, ou `{ device, name, camera }` | toutes |
 | `camera` | Caméra à afficher, à la place de celle de l'imprimante | caméra de l'imprimante |
-| `camera_refresh` | Rafraîchissement de la caméra (secondes, 2 au minimum) | `5` |
+| `camera_mode` | `live` (vidéo en direct) ou `snapshot` (image par image) | `live` |
+| `camera_refresh` | Rafraîchissement en mode `snapshot` (secondes, 2 au minimum) | `5` |
 | `show_job`, `show_camera`, `show_temps`, `show_controls`, `show_stats` | Afficher chaque partie | `true` |
 | `theme` | `v2` (bleu nuit MyElectricalData), `auto` (clair ou sombre selon Home Assistant) ou `ha` (thème Home Assistant) | `v2` |
 
