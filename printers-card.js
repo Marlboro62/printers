@@ -13,7 +13,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.1.6-beta";
+const CARD_VERSION = "0.1.7-beta";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -430,6 +430,8 @@ class PrintersCard extends HTMLElement {
           this._keep(p.id, { ...last, result: status, ended: Number.isFinite(at) ? at : Date.now() });
         }
         const l = this._lastJob(p.id);
+        // fin d'impression réussie : dernière couche atteinte (le G-code de fin remonte la buse et fait monter la couche)
+        if (l.result === "complete" && l.layers) l.layer = l.layers;
         // valeurs gardées pendant l'impression : Moonraker remet durée et couche à 0 à la fin
         const pick = (k) => (l[k] !== null && l[k] !== undefined && l[k] !== 0 ? l[k] : j?.[k] ?? null);
         j = { ...l, file: l.file || j?.file, elapsed: pick("elapsed"), layer: pick("layer"), layers: pick("layers"), filament: pick("filament"),
@@ -448,7 +450,7 @@ class PrintersCard extends HTMLElement {
                 ${kv(active ? "Écoulé" : "Durée", dur(j.elapsed))}
                 ${active ? kv("Restant", j.left ? dur(j.left) : null) : ""}
                 ${active ? kv("Fin prévue", j.eta ? when(j.eta) : null) : kv({ cancelled: "Annulée", error: "Arrêtée" }[j.result] || "Terminée", j.ended ? when(new Date(j.ended)) : null)}
-                ${kv("Couche", j.layer !== null && j.layer !== undefined && j.layers ? `${fmt(j.layer)} / ${fmt(j.layers)}` : null)}
+                ${kv("Couche", j.layer !== null && j.layer !== undefined && j.layers ? `${fmt(Math.min(j.layer, j.layers))} / ${fmt(j.layers)}` : null)}
                 ${kv("Filament", j.filament ? `${fmt(j.filament, 1)} m` : null)}
                 ${active ? kv("Vitesse", j.speed ? `${fmt(j.speed)} mm/s` : null) : ""}
               </div>
