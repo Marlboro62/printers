@@ -33,7 +33,7 @@
 | Type | Carte |
 | --- | --- |
 | `custom:printers-card` | **Imprimantes 3D** : état, impression en cours, caméra en direct, températures, commandes et statistiques |
-| `custom:printers-office-card` | **Imprimantes de bureau** *(bêta)* : état et alertes (bourrage, plus de papier…), encre ou toner, pièces d'usure, compteurs de pages |
+| `custom:printers-office-card` | **Imprimantes de bureau** : état et alertes (bourrage, plus de papier…), encre ou toner, pièces d'usure, compteurs de pages |
 
 Elles ont le style des cartes MyElectricalData new ([Carte Enedis Linky New](https://github.com/Marlboro62/content-card-linky-new)) et des [Cartes Serveur HA](https://github.com/Marlboro62/serveur-ha-card) : thème bleu nuit, version claire, ou thème Home Assistant.
 
@@ -74,7 +74,7 @@ Elles ont le style des cartes MyElectricalData new ([Carte Enedis Linky New](htt
 
 | Intégration | Imprimantes | État |
 | --- | --- | --- |
-| **Internet Printing Protocol (IPP)**, intégrée à Home Assistant | la plupart des imprimantes réseau : HP, Epson, Canon, Brother, Kyocera, imprimantes partagées par CUPS | prévue, non testée |
+| **Internet Printing Protocol (IPP)**, intégrée à Home Assistant | la plupart des imprimantes réseau : HP, Epson, Canon, Brother, Kyocera, imprimantes partagées par CUPS | testée (HP ENVY) |
 | **Brother**, intégrée à Home Assistant | Brother laser et jet d'encre (toner, tambour, unité de fixation, courroie, compteurs) | prévue, non testée |
 | Intégrations HACS qui donnent les niveaux d'encre en % (Epson Workforce, HP Printer…) | | reconnues d'après le nom des capteurs |
 
@@ -87,8 +87,6 @@ Si votre intégration n'est pas bien reconnue, ouvrez une [issue](https://github
 1. Dans HACS, menu **⋮** → **Dépôts personnalisés**.
 2. Ajoutez `https://github.com/Marlboro62/printers` avec le type **Tableau de bord** (Dashboard).
 3. Cherchez **Cartes Imprimantes**, installez, puis rechargez la page (Ctrl+F5).
-
-> La carte Imprimantes de bureau est en bêta : activez **Afficher les versions bêta** dans la fenêtre de téléchargement de HACS.
 
 ### Manuellement
 
