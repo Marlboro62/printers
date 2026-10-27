@@ -49,8 +49,10 @@ const when = (d) => (d.toDateString() === new Date().toDateString() ? hm(d)
 const PLATFORMS = { moonraker: "Moonraker", octoprint: "OctoPrint", prusalink: "PrusaLink", bambu_lab: "Bambu Lab" };
 /** Rôle d'une entité : fin de son nom (identique en français et en anglais pour ces intégrations). */
 const ROLES = [
-  // les noms les plus précis d'abord (totals_print_time avant print_time, target_bed_temperature avant bed_temperature)
+  // les noms les plus précis d'abord (emergency_stop avant stop, totals_print_time avant print_time, target_bed_temperature avant bed_temperature)
   ["pstate", "sensor", /_(printer_state)$/],
+  // avant « cancel » : emergency_stop se termine aussi par _stop
+  ["estop", "button", /_(emergency_stop)$/],
   ["jobs", "sensor", /_(totals_jobs)$/],
   ["total_time", "sensor", /_(totals_print_time)$/],
   ["total_filament", "sensor", /_(totals_filament_used)$/],
@@ -83,7 +85,6 @@ const ROLES = [
   ["pause", "button", /_(pause_print|pause_job|pause)$/],
   ["resume", "button", /_(resume_print|resume_job|resume)$/],
   ["cancel", "button", /_(cancel_print|stop_job|cancel_job|stop)$/],
-  ["estop", "button", /_(emergency_stop)$/],
   ["home", "button", /_(home_all_axes)$/],
   ["filament_sensor", "binary_sensor", /_(filament_sensor|filament_runout)$/],
 ];
