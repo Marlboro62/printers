@@ -2,6 +2,8 @@
 
 **Une carte Lovelace pour suivre vos imprimantes 3D dans Home Assistant** : état, impression en cours, caméra, températures, commandes et statistiques. Elle a le style des cartes MyElectricalData new ([Carte Enedis Linky New](https://github.com/Marlboro62/content-card-linky-new)) et des [Cartes Serveur HA](https://github.com/Marlboro62/serveur-ha-card) : thème bleu nuit, version claire, ou thème Home Assistant.
 
+☕ **Si la carte vous est utile : [Buy Me a Coffee](https://buymeacoffee.com/marlboro62) · [Ko-fi](https://ko-fi.com/nothing_one)**
+
 **Aucune dépendance** : pas de button-card ni de card-mod. Les imprimantes sont **détectées automatiquement**, une par onglet, et chaque élément sans capteur est simplement masqué.
 
 | Impression en cours | En pause | Erreur |
@@ -97,8 +99,6 @@ Questions et problèmes : uniquement via les [issues GitHub](https://github.com/
 ## Voir aussi
 
 [Cartes Serveur HA](https://github.com/Marlboro62/serveur-ha-card) · [Carte Onduleur UPS](https://github.com/Marlboro62/onduleur-ups-card) · [Carte Enedis Linky New](https://github.com/Marlboro62/content-card-linky-new)
-
-Si la carte vous est utile : [Buy Me a Coffee](https://buymeacoffee.com/marlboro62) · [Ko-fi](https://ko-fi.com/nothing_one)
 
 ## Licence
 
