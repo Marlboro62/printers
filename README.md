@@ -43,17 +43,17 @@ Elles ont le style des cartes MyElectricalData new ([Carte Enedis Linky New](htt
 
 | Impression en cours | En pause | Erreur |
 | --- | --- | --- |
-| ![Impression en cours](images/impression.png) | ![En pause](images/pause.png) | ![Erreur](images/erreur.png) |
+| ![Impression en cours](https://raw.githubusercontent.com/Marlboro62/printers/main/images/impression.png) | ![En pause](https://raw.githubusercontent.com/Marlboro62/printers/main/images/pause.png) | ![Erreur](https://raw.githubusercontent.com/Marlboro62/printers/main/images/erreur.png) |
 
 | Impression terminée | Seconde imprimante | Clair |
 | --- | --- | --- |
-| ![Impression terminée](images/terminee.png) | ![Seconde imprimante](images/deux-imprimantes.png) | ![Clair](images/impression-clair.png) |
+| ![Impression terminée](https://raw.githubusercontent.com/Marlboro62/printers/main/images/terminee.png) | ![Seconde imprimante](https://raw.githubusercontent.com/Marlboro62/printers/main/images/deux-imprimantes.png) | ![Clair](https://raw.githubusercontent.com/Marlboro62/printers/main/images/impression-clair.png) |
 
 ### Imprimantes de bureau
 
 | Laser couleur | Encre basse | Bourrage | Clair |
 | --- | --- | --- | --- |
-| ![Imprimantes de bureau](images/bureau.png) | ![Encre basse](images/bureau-encre-basse.png) | ![Bourrage](images/bureau-bourrage.png) | ![Clair](images/bureau-clair.png) |
+| ![Imprimantes de bureau](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau.png) | ![Encre basse](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-encre-basse.png) | ![Bourrage](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-bourrage.png) | ![Clair](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-clair.png) |
 
 *Aperçus réalisés avec la démo et des valeurs fictives (imprimantes, fichiers et images de caméra inventés).*
 
