@@ -43,17 +43,17 @@ Elles ont le style des cartes MyElectricalData new ([Carte Enedis Linky New](htt
 
 | Impression en cours | En pause | Erreur |
 | --- | --- | --- |
-| ![Impression en cours](https://raw.githubusercontent.com/Marlboro62/printers/main/images/impression.png) | ![En pause](https://raw.githubusercontent.com/Marlboro62/printers/main/images/pause.png) | ![Erreur](https://raw.githubusercontent.com/Marlboro62/printers/main/images/erreur.png) |
+| <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/impression.png" alt="Impression en cours" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/pause.png" alt="En pause" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/erreur.png" alt="Erreur" width="300"> |
 
 | Impression terminée | Seconde imprimante | Clair |
 | --- | --- | --- |
-| ![Impression terminée](https://raw.githubusercontent.com/Marlboro62/printers/main/images/terminee.png) | ![Seconde imprimante](https://raw.githubusercontent.com/Marlboro62/printers/main/images/deux-imprimantes.png) | ![Clair](https://raw.githubusercontent.com/Marlboro62/printers/main/images/impression-clair.png) |
+| <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/terminee.png" alt="Impression terminée" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/deux-imprimantes.png" alt="Seconde imprimante" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/impression-clair.png" alt="Clair" width="300"> |
 
 ### Imprimantes de bureau
 
 | Laser couleur | Encre basse | Bourrage | Clair |
 | --- | --- | --- | --- |
-| ![Imprimantes de bureau](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau.png) | ![Encre basse](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-encre-basse.png) | ![Bourrage](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-bourrage.png) | ![Clair](https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-clair.png) |
+| <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau.png" alt="Imprimantes de bureau" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-encre-basse.png" alt="Encre basse" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-bourrage.png" alt="Bourrage" width="300"> | <img src="https://raw.githubusercontent.com/Marlboro62/printers/main/images/bureau-clair.png" alt="Clair" width="300"> |
 
 *Aperçus réalisés avec la démo et des valeurs fictives (imprimantes, fichiers et images de caméra inventés).*
 
