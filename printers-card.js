@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.3.5";
+const CARD_VERSION = "0.4.0-beta.1";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -637,7 +637,7 @@ class PrintersCard extends HTMLElement {
 
     const alert = statuses.includes("error");
     this.shadowRoot.innerHTML = `${STYLE}<ha-card class="${themeClass(c.theme, this._hass)} ${alert ? "pc-alert" : ""}">
-      <header><div class="brand"><ha-icon class="pc-icon" icon="${esc(c.icon || "mdi:printer-3d")}" style="color:${esc(c.icon_color || "var(--med-blue)")}"></ha-icon>
+      <header><div class="brand"><ha-icon class="pc-icon" icon="${esc(c.icon || "mdi:printer-3d")}" style="color:${esc(c.icon_color || "var(--med-accent, var(--med-blue))")}"></ha-icon>
         <div><div class="title">${esc(title)}</div><div class="sub">${esc(sub)}</div></div></div></header>
       ${body}
     </ha-card>`;
@@ -702,21 +702,21 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-tab { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
   border: 1px solid var(--med-line); background: var(--med-surface); font-size: .82rem; font-weight: 600; }
 .pc-tab small { color: var(--med-muted); font-weight: 500; }
-.pc-tab.on { border-color: var(--med-blue); box-shadow: inset 0 -2px 0 var(--med-blue); }
-.pc-tab:focus-visible { outline: 2px solid var(--med-blue); }
+.pc-tab.on { border-color: var(--med-accent, var(--med-blue)); box-shadow: inset 0 -2px 0 var(--med-accent, var(--med-blue)); }
+.pc-tab:focus-visible { outline: 2px solid var(--med-accent, var(--med-blue)); }
 .pc-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--med-muted); flex: none; }
-.pc-dot.ok { background: var(--med-down); } .pc-dot.print { background: var(--med-blue); } .pc-dot.warn { background: var(--pc-warn); } .pc-dot.bad { background: var(--t-red); }
+.pc-dot.ok { background: var(--med-down); } .pc-dot.print { background: var(--med-accent, var(--med-blue)); } .pc-dot.warn { background: var(--pc-warn); } .pc-dot.bad { background: var(--t-red); }
 .pc-sec { margin: 12px 12px 0; }
 .pc-h { display: flex; align-items: center; gap: 6px; font-size: .86rem; font-weight: 600; margin: 0 2px 8px; }
-.pc-h ha-icon { --mdc-icon-size: 18px; color: var(--med-blue); }
+.pc-h ha-icon { --mdc-icon-size: 18px; color: var(--med-accent, var(--med-blue)); }
 .pc-state { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--med-line); background: var(--med-surface); cursor: pointer; }
 .pc-state ha-icon { --mdc-icon-size: 26px; color: var(--med-muted); flex: none; }
 .pc-state div { display: grid; min-width: 0; }
 .pc-state b { font-size: .95rem; }
 .pc-state span { font-size: .76rem; color: var(--med-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-state.ok ha-icon, .pc-state.ok b { color: var(--med-down); }
-.pc-state.print { border-color: color-mix(in srgb, var(--med-blue) 55%, transparent); background: color-mix(in srgb, var(--med-blue) 10%, var(--med-surface)); }
-.pc-state.print ha-icon, .pc-state.print b { color: var(--med-blue); }
+.pc-state.print { border-color: color-mix(in srgb, var(--med-accent, var(--med-blue)) 55%, transparent); background: color-mix(in srgb, var(--med-accent, var(--med-blue)) 10%, var(--med-surface)); }
+.pc-state.print ha-icon, .pc-state.print b { color: var(--med-accent, var(--med-blue)); }
 .pc-state.warn { border-color: var(--pc-warn); } .pc-state.warn ha-icon, .pc-state.warn b { color: var(--pc-warn); }
 .pc-state.bad { border-color: var(--t-red); background: color-mix(in srgb, var(--t-red) 12%, var(--med-surface)); } .pc-state.bad ha-icon, .pc-state.bad b { color: var(--t-red); }
 .pc-job { display: flex; gap: 12px; padding: 10px; border-radius: 12px; border: 1px solid var(--med-line); background: var(--med-surface); cursor: pointer; }
@@ -727,7 +727,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-prog { display: flex; align-items: center; gap: 8px; }
 .pc-prog b { font-size: 1.05rem; white-space: nowrap; }
 .pc-bar { flex: 1; height: 9px; border-radius: 6px; background: var(--med-line); overflow: hidden; }
-.pc-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--med-blue), var(--med-green)); }
+.pc-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--med-accent, var(--med-blue)), var(--med-green)); }
 .pc-bar.warn i { background: var(--pc-warn); } .pc-bar.bad i { background: var(--t-red); } .pc-bar.ok i { background: var(--med-down); }
 .pc-kvs { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 2px 12px; }
 .pc-kv { display: flex; justify-content: space-between; gap: 6px; font-size: .76rem; color: var(--med-muted); }
@@ -753,7 +753,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-btn ha-icon { --mdc-icon-size: 18px; flex: none; }
 .pc-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pc-outs { margin-top: 6px; }
-.pc-btn:hover { border-color: var(--med-blue); } .pc-btn:focus-visible { outline: 2px solid var(--med-blue); }
+.pc-btn:hover { border-color: var(--med-accent, var(--med-blue)); } .pc-btn:focus-visible { outline: 2px solid var(--med-accent, var(--med-blue)); }
 .pc-btn.go { color: var(--med-down); border-color: color-mix(in srgb, var(--med-down) 45%, transparent); }
 .pc-btn.warn { color: var(--pc-warn); border-color: color-mix(in srgb, var(--pc-warn) 45%, transparent); }
 .pc-btn.bad { color: var(--t-red); border-color: color-mix(in srgb, var(--t-red) 40%, transparent); }
@@ -762,14 +762,17 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 @keyframes pc-pulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc-warn) 30%, transparent); } }
 .pc-ss { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
 .pc-s { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--med-line); cursor: pointer; text-align: center; }
-.pc-s ha-icon { --mdc-icon-size: 18px; color: var(--med-blue); } .pc-s b { font-size: .95rem; } .pc-s span { font-size: .72rem; color: var(--med-muted); }
+.pc-s ha-icon { --mdc-icon-size: 18px; color: var(--med-accent, var(--med-blue)); } .pc-s b { font-size: .95rem; } .pc-s span { font-size: .72rem; color: var(--med-muted); }
 a.po-link { text-decoration: none; color: var(--med-muted); }
-a.po-link:hover { border-color: var(--med-blue); } a.po-link:focus-visible { outline: 2px solid var(--med-blue); }
+a.po-link:hover { border-color: var(--med-accent, var(--med-blue)); } a.po-link:focus-visible { outline: 2px solid var(--med-accent, var(--med-blue)); }
 .po-ext { --mdc-icon-size: 13px !important; opacity: .7; }
 .pc-x.po-upd { color: var(--pc-warn); border-color: color-mix(in srgb, var(--pc-warn) 50%, transparent); }
 .pc-x.po-upd b { color: var(--pc-warn); }
 .empty { padding: 18px; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; } .empty span { color: var(--med-muted); }
 ha-card.th-ha {
+  /* accent (icônes, onglets, sélections, contours) : couleur principale du thème ; les bleus porteurs de sens restent bleus */
+  --med-accent: var(--primary-color, #1d93e3);
+  --med-on-accent: var(--text-primary-color, #fff);
   --med-bg: var(--ha-card-background, var(--card-background-color, #fff));
   --med-surface: color-mix(in srgb, var(--primary-text-color, #000) 5%, transparent);
   --med-line: var(--divider-color, rgba(127, 127, 127, .25));
@@ -1148,7 +1151,7 @@ class PrintersOfficeCard extends HTMLElement {
 
     const alert = infos.some((x) => x.st.cls === "bad");
     this.shadowRoot.innerHTML = `${STYLE}${OFFICE_STYLE}<ha-card class="${themeClass(c.theme, this._hass)} ${alert ? "pc-alert" : ""}">
-      <header><div class="brand"><ha-icon class="pc-icon" icon="${esc(c.icon || "mdi:printer")}" style="color:${esc(c.icon_color || "var(--med-blue)")}"></ha-icon>
+      <header><div class="brand"><ha-icon class="pc-icon" icon="${esc(c.icon || "mdi:printer")}" style="color:${esc(c.icon_color || "var(--med-accent, var(--med-blue))")}"></ha-icon>
         <div><div class="title">${esc(title)}</div><div class="sub">${esc(sub)}</div></div></div></header>
       ${body}
     </ha-card>`;
