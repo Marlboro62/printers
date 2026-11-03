@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.4.1";
+const CARD_VERSION = "0.5.0-beta.1";
 
 /* ------------------------------------------------------------- affichage */
 
@@ -932,6 +932,7 @@ const OFFICE_DEFAULTS = {
   title: "", icon: "mdi:printer", icon_color: "",
   low_level: 15, // % : seuil d'alerte des consommables
   show_supplies: true, show_parts: true, show_counters: true, show_device: true,
+  supplies_sort: "color", // color : noir, cyan, magenta, jaune ; level : de la plus vide à la plus pleine
   theme: "v2",
 };
 
@@ -1066,7 +1067,11 @@ class PrintersOfficeCard extends HTMLElement {
       const lowAt = Number(s.attributes?.marker_low_level) || low;
       const kind = /toner/i.test(`${id} ${name}`) ? "toner" : "encre";
       return { id, v: Math.max(0, Math.min(100, v)), color: ink.color, label: ink.label || name.replace(/_/g, " "), kind, low: v <= lowAt, empty: v <= 2 };
-    }).filter(Boolean).sort((a, b) => INKS.findIndex(([, c]) => c === a.color) - INKS.findIndex(([, c]) => c === b.color));
+    }).filter(Boolean).sort((a, b) => {
+      const byColor = INKS.findIndex(([, c]) => c === a.color) - INKS.findIndex(([, c]) => c === b.color);
+      // « level » : les cartouches à remplacer bientôt d'abord (à niveau égal, ordre des couleurs)
+      return this._config.supplies_sort === "level" ? a.v - b.v || byColor : byColor;
+    });
   }
 
   _render() {
@@ -1186,6 +1191,9 @@ const OFFICE_SCHEMA = [
   { name: "printers", selector: { device: { multiple: true, filter: [{ integration: "ipp" }, { integration: "brother" }] } } },
   { name: "low_level", selector: { number: { min: 1, max: 50, mode: "box", unit_of_measurement: "%" } } },
   { name: "show_supplies", selector: { boolean: {} } },
+  { name: "supplies_sort", selector: { select: { mode: "dropdown", options: [
+    { value: "color", label: "Par couleur (noir, cyan, magenta, jaune)" },
+    { value: "level", label: "Par niveau, de la plus vide à la plus pleine" }] } } },
   { name: "show_parts", selector: { boolean: {} } },
   { name: "show_counters", selector: { boolean: {} } },
   { name: "show_device", selector: { boolean: {} } },
@@ -1198,6 +1206,7 @@ const OFFICE_LABELS = {
   printers: "Imprimantes affichées, dans cet ordre (vide = toutes)",
   low_level: "Alerte quand l'encre ou le toner descend sous",
   show_supplies: "Encre et toner",
+  supplies_sort: "Ordre des cartouches",
   show_parts: "Pièces d'usure (tambour, unité de fixation…)",
   show_counters: "Compteurs de pages",
   show_device: "Appareil (adresse IP, micrologiciel, mises à jour)",

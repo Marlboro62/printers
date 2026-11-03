@@ -175,6 +175,7 @@ Un clic sur un élément ouvre la fiche de l'entité dans Home Assistant.
 | `icon`, `icon_color` | Icône et couleur de l'icône | `mdi:printer`, bleu |
 | `printers` | Imprimantes affichées, dans cet ordre : appareils, ou `{ device, name }` | toutes |
 | `low_level` | Seuil d'alerte de l'encre et du toner (%) | `15` |
+| `supplies_sort` | Ordre des cartouches : `color` (noir, cyan, magenta, jaune) ou `level` (de la plus vide à la plus pleine) | `color` |
 | `show_supplies`, `show_parts`, `show_counters`, `show_device` | Afficher chaque partie | `true` |
 | `theme` | `v2`, `auto` ou `ha` | `v2` |
 
