@@ -28,6 +28,9 @@
 
 # Cartes Imprimantes 3D et bureau
 
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz/)
+[![Release](https://img.shields.io/github/v/release/Marlboro62/printers)](https://github.com/Marlboro62/printers/releases)
+
 **Deux cartes Lovelace indépendantes, dans un seul fichier**, pour suivre vos imprimantes dans Home Assistant :
 
 | Type | Carte |
