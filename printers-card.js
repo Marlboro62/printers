@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.6.0-beta.1";
+const CARD_VERSION = "0.6.0-beta.2";
 
 /* ------------------------------------------------------------- langues */
 
@@ -234,7 +234,11 @@ const parseHms = (v) => {
   return (Number(m[1] || 0) * 86400) + (Number(m[2] || 0) * 3600) + (Number(m[3] || 0) * 60) + Number(m[4] || 0);
 };
 // heure sur deux chiffres en 24 h (« 09:07 »), sans zéro en 12 h (« 9:07 PM »)
-const hm = (d) => d.toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit", hour12: HOUR12 });
+// heure sur deux chiffres en 24 h (« 06:40 »), sans zéro en 12 h (« 6:40 AM »)
+const hm = (d) => {
+  const h12 = HOUR12 ?? new Intl.DateTimeFormat(LOCALE, { hour: "numeric" }).resolvedOptions().hour12;
+  return d.toLocaleTimeString(LOCALE, { hour: h12 ? "numeric" : "2-digit", minute: "2-digit", hour12: HOUR12 });
+};
 const when = (d) => (d.toDateString() === new Date().toDateString() ? hm(d)
   : `${d.toLocaleDateString(LOCALE, { weekday: "short", day: "numeric" })} ${hm(d)}`);
 
