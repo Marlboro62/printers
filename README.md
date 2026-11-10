@@ -42,6 +42,8 @@ Elles ont le style des cartes MyElectricalData new ([Carte Enedis Linky New](htt
 
 **Aucune dépendance** : pas de button-card ni de card-mod. Les imprimantes sont **détectées automatiquement**, une par onglet, et chaque élément sans capteur est simplement masqué.
 
+**Français, anglais et allemand** : les cartes et leurs éditeurs suivent la langue du profil Home Assistant, ainsi que ses formats de nombres et d'heure (12 ou 24 h). Une autre langue affiche l'anglais. *The cards follow your Home Assistant profile language: French, English or German (English otherwise).*
+
 ### Imprimantes 3D
 
 | Impression en cours | En pause | Erreur |

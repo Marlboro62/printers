@@ -104,6 +104,8 @@
         <button data-v="v2">MyElectricalData</button><button data-v="auto">MyElectricalData auto</button><button data-v="ha">Thème Home Assistant</button></div></div>
       <div class="ctl"><div class="ctl-l">Largeur</div><div class="seg" data-key="width">
         <button data-v="mobile">Téléphone</button><button data-v="large">Tablette / PC</button></div></div>
+      <div class="ctl"><div class="ctl-l">Langue de Home Assistant (<code>hass.locale.language</code>)</div><div class="seg" data-key="lang">
+        <button data-v="fr">Français</button><button data-v="en">English</button><button data-v="de">Deutsch</button></div></div>
 
       <h2>Situation simulée</h2>
       <div class="ctl" data-for="3d both"><div class="ctl-l">Imprimantes 3D</div><div class="seg" data-key="count">
@@ -159,7 +161,7 @@
     });
   }
 
-  const defaults = { card: "3d", page: "dark", theme: "v2", width: "mobile", count: "2", job: "printing", office: "ok" };
+  const defaults = { card: "3d", page: "dark", theme: "v2", width: "mobile", lang: "fr", count: "2", job: "printing", office: "ok" };
   let state = { ...defaults };
   try { state = { ...defaults, ...JSON.parse(localStorage.getItem("printers-card-demo") || "{}") }; } catch (e) { /* ignoré */ }
 
@@ -236,7 +238,7 @@
     addk("hp", "ipp", "sensor.hp_officejet_pro_9010_uptime", new Date(Date.now() - 3 * 86400e3 - 5 * 3600e3).toISOString(), {}, "uptime");
     devices.br = { id: "br", name: "Brother HL-L3270CDW", manufacturer: "Brother", model: "HL-L3270CDW", sw_version: "ZC", configuration_url: "http://192.0.2.32/" };
     // mise à jour proposée par l'intégration (entité update de l'appareil)
-    add("br", "brother", "update.hl_l3270cdw_firmware", o === "low" ? "off" : "on", { title: "Micrologiciel", installed_version: "ZC", latest_version: "ZD", friendly_name: "Brother HL-L3270CDW Micrologiciel" });
+    add("br", "brother", "update.hl_l3270cdw_firmware", o === "low" ? "off" : "on", { title: state.lang === "fr" ? "Micrologiciel" : "Firmware", installed_version: "ZC", latest_version: "ZD", friendly_name: "Brother HL-L3270CDW Firmware" });
     addk("br", "brother", "sensor.hl_l3270cdw_status", o === "sleep" ? "sleep" : "ready", {}, "status");
     for (const [c, v] of [["black", o === "low" ? 9 : 55], ["cyan", 80], ["magenta", 80], ["yellow", 70]])
       addk("br", "brother", `sensor.hl_l3270cdw_${c}_toner_remaining`, v, { unit_of_measurement: "%", friendly_name: `Brother HL-L3270CDW ${c} toner remaining` }, `${c}_toner_remaining`);
@@ -262,7 +264,8 @@
   function hass() {
     const { st, ent, devices } = build();
     return {
-      states: st, entities: ent, devices, themes: { darkMode: state.page === "dark" }, language: "fr",
+      states: st, entities: ent, devices, themes: { darkMode: state.page === "dark" },
+      language: state.lang, locale: { language: state.lang, number_format: "language", time_format: "language" },
       callService: (domain, service, data) => {
         if (domain === "switch") { state.light = (state.light ?? "on") === "on" ? "off" : "on"; render(); }
         toast.textContent = `Démo : ${domain}.${service} sur ${data?.entity_id || ""} (rien n'est envoyé ici).`;

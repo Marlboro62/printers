@@ -16,12 +16,204 @@
 (() => {
 const CARD_VERSION = "0.5.0";
 
+/* ------------------------------------------------------------- langues */
+
+/**
+ * Textes des cartes en français, anglais et allemand. La langue est celle du profil Home Assistant
+ * (hass.locale.language) ; une langue sans traduction affiche l'anglais. Une valeur { one, other }
+ * s'accorde avec {n} (Intl.PluralRules).
+ */
+const I18N = {
+  fr: {
+    // états
+    st_printing: "Impression en cours", st_paused: "En pause", st_complete: "Impression terminée", st_cancelled: "Impression annulée",
+    st_error: "Erreur", st_idle: "Prête", st_offline: "Hors ligne", st_off: "Éteinte", st_booting: "Démarrage…", st_sleep: "En veille",
+    st_stopped: "Arrêtée",
+    // en-tête
+    title_3d: "Imprimantes 3D", title_office: "Imprimantes", printer: "Imprimante",
+    n_printers: "{n} imprimantes", n_printing: "{n} en impression", all_idle: "au repos",
+    n_attention: "{n} à surveiller", all_good: "tout va bien",
+    none_found: "Aucune imprimante trouvée",
+    none_hint_3d: "Ajoutez l'intégration Moonraker (Klipper, via HACS), OctoPrint, PrusaLink ou Bambu Lab, puis rechargez la page.",
+    none_hint_office: "Ajoutez l'intégration Internet Printing Protocol (IPP) ou Brother, puis rechargez la page.",
+    colon: "{a} : {b}",
+    // impression
+    job_active: "Impression", job_last: "Dernière impression", elapsed: "Écoulé", duration: "Durée", remaining: "Restant",
+    eta: "Fin prévue", res_cancelled: "Annulée", res_error: "Arrêtée", res_complete: "Terminée", layer: "Couche",
+    filament: "Filament", speed: "Vitesse", u_day: "j",
+    // caméra et températures
+    camera: "Caméra", camera_alt: "Caméra de l'imprimante", temps: "Températures", nozzle: "Buse", bed: "Plateau",
+    chamber: "Caisson", target: "Consigne {t} °C", cooling: "Refroidissement", heater_off: "Arrêt", heating: "chauffe {p} %",
+    host: "Hôte", board: "Carte", fan: "Ventilateur",
+    // commandes
+    controls: "Commandes", confirm_q: "Confirmer ?", click_again: "{label} : cliquez encore pour confirmer",
+    power_on: "Allumer", power_on_title: "Allumer l'imprimante", power_off: "Éteindre", power_off_title: "Éteindre l'imprimante",
+    turn_on_lc: "allumer", turn_off_lc: "éteindre", pause: "Pause", resume: "Reprendre", cancel: "Annuler", home: "Origine",
+    estop: "Arrêt d'urgence", light_frame: "Lumière cadre", light_nozzle: "Lumière buse", light: "Lumière",
+    // statistiques
+    stats: "Statistiques", jobs: "Impressions", total_time: "Temps total", longest: "Plus longue",
+    // appareil
+    device: "Appareil", address: "Adresse", open_page: "Ouvrir la page de l'imprimante", firmware: "Micrologiciel",
+    open_to_install: "Ouvrir pour installer la mise à jour", update: "mise à jour", up_to_date: "à jour",
+    // bureau
+    ink_photo_black: "Noir photo", ink_black: "Noir", ink_light_cyan: "Cyan clair", ink_photo_cyan: "Cyan photo", ink_cyan: "Cyan",
+    ink_light_magenta: "Magenta clair", ink_photo_magenta: "Magenta photo", ink_magenta: "Magenta", ink_yellow: "Jaune",
+    ink_color: "Couleur", ink_light_gray: "Gris clair", ink_gray: "Gris", ink_red: "Rouge", ink_blue: "Bleu",
+    part_drum: "Tambour", part_fuser: "Unité de fixation", part_belt: "Courroie", part_laser: "Laser", part_pf_kit: "Kit papier",
+    part_maintenance: "Réservoir de maintenance", part_color: "{part} {color_lc}",
+    r_no_paper: "Plus de papier", r_jam: "Bourrage papier", r_cover: "Capot ouvert", r_supply_empty: "Consommable vide : à remplacer",
+    r_supply_low: "Encre ou toner bas",
+    kind_toner: "Toner", kind_ink: "Encre", kind_both: "Encre et toner", replace: "À remplacer", replace_lc: "à remplacer",
+    low: "Bas", almost_empty: "bientôt vide", parts: "Pièces d'usure", counters: "Compteurs", pages: "Pages",
+    bw: "Noir et blanc", color: "Couleur", duplex: "Recto verso", uptime: "Allumée depuis",
+    // éditeurs
+    ed_title_3d: "Titre (vide = nom de l'imprimante, ou Imprimantes 3D)", ed_title_office: "Titre (vide = nom de l'imprimante, ou Imprimantes)",
+    ed_icon: "Icône", ed_icon_color: "Couleur de l'icône", ed_printers: "Imprimantes affichées, dans cet ordre (vide = toutes)",
+    ed_camera: "Caméra (vide = celle de l'imprimante)", ed_camera_mode: "Affichage de la caméra",
+    ed_camera_refresh: "Rafraîchissement en mode image par image", ed_show_job: "Impression en cours", ed_show_camera: "Caméra",
+    ed_show_temps: "Températures", ed_show_controls: "Commandes (pause, reprise, annulation, arrêt d'urgence, lumières)",
+    ed_show_stats: "Statistiques", ed_show_device: "Appareil (adresse IP, micrologiciel, mises à jour)", ed_theme: "Couleurs de la carte",
+    ed_low_level: "Alerte quand l'encre ou le toner descend sous", ed_show_supplies: "Encre et toner",
+    ed_supplies_sort: "Ordre des cartouches", ed_show_parts: "Pièces d'usure (tambour, unité de fixation…)",
+    ed_show_counters: "Compteurs de pages",
+    opt_live: "Vidéo en direct", opt_snapshot: "Image par image (moins de réseau)", opt_v2: "Style MyElectricalData (bleu nuit)",
+    opt_auto: "Style MyElectricalData, clair ou sombre selon Home Assistant", opt_ha: "Thème Home Assistant (clair ou sombre)",
+    opt_sort_color: "Par couleur (noir, cyan, magenta, jaune)", opt_sort_level: "Par niveau, de la plus vide à la plus pleine",
+    card_3d_name: "Carte Imprimantes 3D",
+    card_3d_desc: "État, impression en cours, caméra, températures, commandes et statistiques des imprimantes 3D (Moonraker, OctoPrint, PrusaLink, Bambu Lab).",
+    card_office_name: "Carte Imprimantes de bureau",
+    card_office_desc: "État, encre ou toner, pièces d'usure et compteurs de pages des imprimantes de bureau (IPP, Brother).",
+  },
+  en: {
+    st_printing: "Printing", st_paused: "Paused", st_complete: "Print complete", st_cancelled: "Print cancelled",
+    st_error: "Error", st_idle: "Ready", st_offline: "Offline", st_off: "Off", st_booting: "Starting…", st_sleep: "Sleeping",
+    st_stopped: "Stopped",
+    title_3d: "3D printers", title_office: "Printers", printer: "Printer",
+    n_printers: { one: "{n} printer", other: "{n} printers" }, n_printing: "{n} printing", all_idle: "idle",
+    n_attention: { one: "{n} needs attention", other: "{n} need attention" }, all_good: "all good",
+    none_found: "No printers found",
+    none_hint_3d: "Add the Moonraker (Klipper, via HACS), OctoPrint, PrusaLink or Bambu Lab integration, then reload the page.",
+    none_hint_office: "Add the Internet Printing Protocol (IPP) or Brother integration, then reload the page.",
+    colon: "{a}: {b}",
+    job_active: "Print job", job_last: "Last print", elapsed: "Elapsed", duration: "Duration", remaining: "Remaining",
+    eta: "Finishes", res_cancelled: "Cancelled", res_error: "Stopped", res_complete: "Finished", layer: "Layer",
+    filament: "Filament", speed: "Speed", u_day: "d",
+    camera: "Camera", camera_alt: "Printer camera", temps: "Temperatures", nozzle: "Nozzle", bed: "Bed",
+    chamber: "Chamber", target: "Target {t} °C", cooling: "Cooling down", heater_off: "Off", heating: "heating {p} %",
+    host: "Host", board: "Board", fan: "Fan",
+    controls: "Controls", confirm_q: "Confirm?", click_again: "{label}: click again to confirm",
+    power_on: "Turn on", power_on_title: "Turn the printer on", power_off: "Turn off", power_off_title: "Turn the printer off",
+    turn_on_lc: "turn on", turn_off_lc: "turn off", pause: "Pause", resume: "Resume", cancel: "Cancel", home: "Home",
+    estop: "Emergency stop", light_frame: "Frame light", light_nozzle: "Nozzle light", light: "Light",
+    stats: "Statistics", jobs: "Prints", total_time: "Total time", longest: "Longest",
+    device: "Device", address: "Address", open_page: "Open the printer's web page", firmware: "Firmware",
+    open_to_install: "Open to install the update", update: "update", up_to_date: "up to date",
+    ink_photo_black: "Photo black", ink_black: "Black", ink_light_cyan: "Light cyan", ink_photo_cyan: "Photo cyan", ink_cyan: "Cyan",
+    ink_light_magenta: "Light magenta", ink_photo_magenta: "Photo magenta", ink_magenta: "Magenta", ink_yellow: "Yellow",
+    ink_color: "Color", ink_light_gray: "Light gray", ink_gray: "Gray", ink_red: "Red", ink_blue: "Blue",
+    part_drum: "Drum", part_fuser: "Fuser", part_belt: "Belt", part_laser: "Laser", part_pf_kit: "Paper feed kit",
+    part_maintenance: "Maintenance box", part_color: "{color} {part_lc}",
+    r_no_paper: "Out of paper", r_jam: "Paper jam", r_cover: "Cover open", r_supply_empty: "Supply empty: replace it",
+    r_supply_low: "Ink or toner low",
+    kind_toner: "Toner", kind_ink: "Ink", kind_both: "Ink and toner", replace: "Replace", replace_lc: "replace",
+    low: "Low", almost_empty: "almost empty", parts: "Wear parts", counters: "Counters", pages: "Pages",
+    bw: "Black & white", color: "Color", duplex: "Duplex", uptime: "Uptime",
+    ed_title_3d: "Title (empty = printer name, or 3D printers)", ed_title_office: "Title (empty = printer name, or Printers)",
+    ed_icon: "Icon", ed_icon_color: "Icon color", ed_printers: "Printers shown, in this order (empty = all)",
+    ed_camera: "Camera (empty = the printer's own)", ed_camera_mode: "Camera display",
+    ed_camera_refresh: "Refresh interval in snapshot mode", ed_show_job: "Current print", ed_show_camera: "Camera",
+    ed_show_temps: "Temperatures", ed_show_controls: "Controls (pause, resume, cancel, emergency stop, lights)",
+    ed_show_stats: "Statistics", ed_show_device: "Device (IP address, firmware, updates)", ed_theme: "Card colors",
+    ed_low_level: "Warn when ink or toner drops below", ed_show_supplies: "Ink and toner",
+    ed_supplies_sort: "Cartridge order", ed_show_parts: "Wear parts (drum, fuser…)",
+    ed_show_counters: "Page counters",
+    opt_live: "Live video", opt_snapshot: "Snapshots (less network traffic)", opt_v2: "MyElectricalData style (midnight blue)",
+    opt_auto: "MyElectricalData style, light or dark following Home Assistant", opt_ha: "Home Assistant theme (light or dark)",
+    opt_sort_color: "By color (black, cyan, magenta, yellow)", opt_sort_level: "By level, emptiest first",
+    card_3d_name: "3D printers card",
+    card_3d_desc: "Status, current print, camera, temperatures, controls and statistics of 3D printers (Moonraker, OctoPrint, PrusaLink, Bambu Lab).",
+    card_office_name: "Office printers card",
+    card_office_desc: "Status, ink or toner, wear parts and page counters of office printers (IPP, Brother).",
+  },
+  de: {
+    st_printing: "Druckt", st_paused: "Pausiert", st_complete: "Druck abgeschlossen", st_cancelled: "Druck abgebrochen",
+    st_error: "Fehler", st_idle: "Bereit", st_offline: "Offline", st_off: "Ausgeschaltet", st_booting: "Startet…", st_sleep: "Ruhemodus",
+    st_stopped: "Angehalten",
+    title_3d: "3D-Drucker", title_office: "Drucker", printer: "Drucker",
+    n_printers: "{n} Drucker", n_printing: "{n} im Druck", all_idle: "alle bereit",
+    n_attention: { one: "{n} braucht Aufmerksamkeit", other: "{n} brauchen Aufmerksamkeit" }, all_good: "alles in Ordnung",
+    none_found: "Keine Drucker gefunden",
+    none_hint_3d: "Füge die Integration Moonraker (Klipper, über HACS), OctoPrint, PrusaLink oder Bambu Lab hinzu und lade die Seite neu.",
+    none_hint_office: "Füge die Integration Internet Printing Protocol (IPP) oder Brother hinzu und lade die Seite neu.",
+    colon: "{a}: {b}",
+    job_active: "Druckauftrag", job_last: "Letzter Druck", elapsed: "Vergangen", duration: "Dauer", remaining: "Verbleibend",
+    eta: "Fertig um", res_cancelled: "Abgebrochen", res_error: "Gestoppt", res_complete: "Fertig", layer: "Schicht",
+    filament: "Filament", speed: "Geschwindigkeit", u_day: "T",
+    camera: "Kamera", camera_alt: "Druckerkamera", temps: "Temperaturen", nozzle: "Düse", bed: "Druckbett",
+    chamber: "Bauraum", target: "Soll {t} °C", cooling: "Kühlt ab", heater_off: "Aus", heating: "Heizleistung {p} %",
+    host: "Host", board: "Platine", fan: "Lüfter",
+    controls: "Steuerung", confirm_q: "Bestätigen?", click_again: "{label}: zum Bestätigen erneut klicken",
+    power_on: "Einschalten", power_on_title: "Drucker einschalten", power_off: "Ausschalten", power_off_title: "Drucker ausschalten",
+    turn_on_lc: "einschalten", turn_off_lc: "ausschalten", pause: "Pause", resume: "Fortsetzen", cancel: "Abbrechen", home: "Referenzfahrt",
+    estop: "Not-Aus", light_frame: "Rahmenlicht", light_nozzle: "Düsenlicht", light: "Licht",
+    stats: "Statistik", jobs: "Drucke", total_time: "Gesamtzeit", longest: "Längster Druck",
+    device: "Gerät", address: "Adresse", open_page: "Weboberfläche des Druckers öffnen", firmware: "Firmware",
+    open_to_install: "Öffnen, um das Update zu installieren", update: "Update", up_to_date: "aktuell",
+    ink_photo_black: "Fotoschwarz", ink_black: "Schwarz", ink_light_cyan: "Hell-Cyan", ink_photo_cyan: "Foto-Cyan", ink_cyan: "Cyan",
+    ink_light_magenta: "Hell-Magenta", ink_photo_magenta: "Foto-Magenta", ink_magenta: "Magenta", ink_yellow: "Gelb",
+    ink_color: "Farbe", ink_light_gray: "Hellgrau", ink_gray: "Grau", ink_red: "Rot", ink_blue: "Blau",
+    part_drum: "Trommel", part_fuser: "Fixiereinheit", part_belt: "Transferband", part_laser: "Laser", part_pf_kit: "Papiereinzugskit",
+    part_maintenance: "Wartungsbox", part_color: "{part} {color}",
+    r_no_paper: "Kein Papier", r_jam: "Papierstau", r_cover: "Abdeckung offen", r_supply_empty: "Verbrauchsmaterial leer: ersetzen",
+    r_supply_low: "Tinte oder Toner niedrig",
+    kind_toner: "Toner", kind_ink: "Tinte", kind_both: "Tinte und Toner", replace: "Ersetzen", replace_lc: "ersetzen",
+    low: "Niedrig", almost_empty: "fast leer", parts: "Verschleißteile", counters: "Zähler", pages: "Seiten",
+    bw: "Schwarzweiß", color: "Farbe", duplex: "Duplex", uptime: "Betriebszeit",
+    ed_title_3d: "Titel (leer = Druckername oder 3D-Drucker)", ed_title_office: "Titel (leer = Druckername oder Drucker)",
+    ed_icon: "Symbol", ed_icon_color: "Symbolfarbe", ed_printers: "Angezeigte Drucker, in dieser Reihenfolge (leer = alle)",
+    ed_camera: "Kamera (leer = die des Druckers)", ed_camera_mode: "Kameraanzeige",
+    ed_camera_refresh: "Aktualisierung im Einzelbildmodus", ed_show_job: "Aktueller Druck", ed_show_camera: "Kamera",
+    ed_show_temps: "Temperaturen", ed_show_controls: "Steuerung (Pause, Fortsetzen, Abbrechen, Not-Aus, Licht)",
+    ed_show_stats: "Statistik", ed_show_device: "Gerät (IP-Adresse, Firmware, Updates)", ed_theme: "Kartenfarben",
+    ed_low_level: "Warnen, wenn Tinte oder Toner unter diesen Wert fällt", ed_show_supplies: "Tinte und Toner",
+    ed_supplies_sort: "Reihenfolge der Patronen", ed_show_parts: "Verschleißteile (Trommel, Fixiereinheit…)",
+    ed_show_counters: "Seitenzähler",
+    opt_live: "Live-Video", opt_snapshot: "Einzelbilder (weniger Netzwerklast)", opt_v2: "MyElectricalData-Stil (Nachtblau)",
+    opt_auto: "MyElectricalData-Stil, hell oder dunkel wie Home Assistant", opt_ha: "Home-Assistant-Design (hell oder dunkel)",
+    opt_sort_color: "Nach Farbe (Schwarz, Cyan, Magenta, Gelb)", opt_sort_level: "Nach Füllstand, leerste zuerst",
+    card_3d_name: "3D-Drucker-Karte",
+    card_3d_desc: "Status, aktueller Druck, Kamera, Temperaturen, Steuerung und Statistik von 3D-Druckern (Moonraker, OctoPrint, PrusaLink, Bambu Lab).",
+    card_office_name: "Bürodrucker-Karte",
+    card_office_desc: "Status, Tinte oder Toner, Verschleißteile und Seitenzähler von Bürodruckern (IPP, Brother).",
+  },
+};
+let LANG = "fr", LOCALE = "fr-FR", NUM_LOCALE = "fr-FR", HOUR12;
+const validLocale = (l) => { try { return l ? Intl.getCanonicalLocales(l)[0] : null; } catch (e) { return null; } };
+/** Langue et formats (nombres, heure 12 ou 24 h) d'après le profil Home Assistant de l'utilisateur. */
+const setLang = (hass) => {
+  const loc = hass?.locale || {};
+  const raw = validLocale(loc.language || hass?.language) || validLocale(globalThis.navigator?.language) || "en";
+  const lang = raw.split("-")[0].toLowerCase();
+  LANG = I18N[lang] ? lang : "en";
+  LOCALE = raw;
+  const nf = loc.number_format;
+  NUM_LOCALE = nf === "system" ? undefined : { comma_decimal: "en-US", decimal_comma: "de-DE", space_comma: "fr-FR" }[nf] || raw;
+  HOUR12 = loc.time_format === "12" ? true : loc.time_format === "24" ? false : undefined;
+};
+/** Texte traduit ; {nom} est remplacé par vars.nom. */
+const t = (key, vars = {}) => {
+  let s = I18N[LANG][key] ?? I18N.en[key] ?? key;
+  if (typeof s === "object") s = s[new Intl.PluralRules(LANG).select(Number(vars.n))] ?? s.other;
+  return s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+};
+setLang(null);
+
 /* ------------------------------------------------------------- affichage */
 
 const fmt = (n, digits = 0) =>
   n === null || n === undefined || !Number.isFinite(Number(n))
     ? "—"
-    : Number(n).toLocaleString("fr-FR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    : Number(n).toLocaleString(NUM_LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const themeClass = (theme, hass) => {
   const light = hass?.themes?.darkMode === false;
@@ -29,11 +221,11 @@ const themeClass = (theme, hass) => {
   if (theme === "auto") return `th-v2${light ? " light" : ""}`;
   return "th-v2";
 };
-/** Durée en secondes → « 2 h 05 min », « 12 min », « 3 j 4 h ». */
+/** Durée en secondes → « 2 h 05 min », « 12 min », « 3 j 4 h » (« 3 d 4 h » en anglais). */
 const dur = (s) => {
   if (s === null || !Number.isFinite(s) || s < 0) return null;
   const m = Math.round(s / 60), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mn = m % 60;
-  return d ? `${d} j ${h} h` : h ? `${h} h ${String(mn).padStart(2, "0")} min` : `${mn} min`;
+  return d ? `${d} ${t("u_day")} ${h} h` : h ? `${h} h ${String(mn).padStart(2, "0")} min` : `${mn} min`;
 };
 /** « 496h 34m 42s » (Moonraker) → secondes. */
 const parseHms = (v) => {
@@ -41,9 +233,10 @@ const parseHms = (v) => {
   if (!m || !m[0].trim()) return null;
   return (Number(m[1] || 0) * 86400) + (Number(m[2] || 0) * 3600) + (Number(m[3] || 0) * 60) + Number(m[4] || 0);
 };
-const hm = (d) => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+// heure sur deux chiffres en 24 h (« 09:07 »), sans zéro en 12 h (« 9:07 PM »)
+const hm = (d) => d.toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit", hour12: HOUR12 });
 const when = (d) => (d.toDateString() === new Date().toDateString() ? hm(d)
-  : `${d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })} ${hm(d)}`);
+  : `${d.toLocaleDateString(LOCALE, { weekday: "short", day: "numeric" })} ${hm(d)}`);
 
 /* --------------------------------------------------------- détection */
 
@@ -120,10 +313,11 @@ const NORM = [
   [/^(offline|unavailable|unknown|closed|disconnected)$/i, "offline"],
 ];
 const norm = (s) => (NORM.find(([re]) => re.test(String(s ?? "").trim())) || [, "idle"])[1];
+/** État normalisé → [clé du libellé (I18N), icône, couleur]. */
 const STATE = {
-  printing: ["Impression en cours", "mdi:printer-3d-nozzle", "print"], paused: ["En pause", "mdi:pause-circle-outline", "warn"],
-  complete: ["Impression terminée", "mdi:check-circle-outline", "ok"], cancelled: ["Impression annulée", "mdi:close-circle-outline", "warn"],
-  error: ["Erreur", "mdi:alert-circle-outline", "bad"], idle: ["Prête", "mdi:printer-3d", "ok"], offline: ["Hors ligne", "mdi:lan-disconnect", "off"],
+  printing: ["st_printing", "mdi:printer-3d-nozzle", "print"], paused: ["st_paused", "mdi:pause-circle-outline", "warn"],
+  complete: ["st_complete", "mdi:check-circle-outline", "ok"], cancelled: ["st_cancelled", "mdi:close-circle-outline", "warn"],
+  error: ["st_error", "mdi:alert-circle-outline", "bad"], idle: ["st_idle", "mdi:printer-3d", "ok"], offline: ["st_offline", "mdi:lan-disconnect", "off"],
 };
 const slug = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 /** Suffixe de connexion à ignorer pour reconnaître une même imprimante déclarée deux fois. */
@@ -204,6 +398,7 @@ class PrintersCard extends HTMLElement {
   }
 
   set hass(hass) {
+    setLang(hass);
     if (this._hass?.entities !== hass.entities || this._hass?.devices !== hass.devices) this._map = null;
     this._hass = hass;
     this._render();
@@ -266,7 +461,7 @@ class PrintersCard extends HTMLElement {
       this._camStop();
       const img = document.createElement("img");
       img.className = "pc-cam";
-      img.alt = "Caméra de l'imprimante";
+      img.alt = t("camera_alt");
       // flux coupé (redémarrage, réseau) : nouvel essai dans 5 s avec un jeton à jour
       img.onerror = () => { clearTimeout(this._camRetry); this._camRetry = setTimeout(() => this._camLoad(), 5000); };
       this._camEl = img; this._camKey = key; this._camId = camId; this._camMode = mode;
@@ -435,7 +630,7 @@ class PrintersCard extends HTMLElement {
         const d = list.find((x) => x.links.includes(w.device) || x.name.toLowerCase() === String(w.device || "").toLowerCase());
         return d ? { ...d, name: w.name || d.name, camera: w.camera || null, power: w.power ?? null } : null;
       }).filter(Boolean);
-    } else list.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    } else list.sort((a, b) => a.name.localeCompare(b.name, LOCALE));
     this._map = list;
     return list;
   }
@@ -475,19 +670,19 @@ class PrintersCard extends HTMLElement {
     const p = list.find((x) => x.id === this._tab || x.links?.includes(this._tab))
       || list.find((x) => ["printing", "paused", "error"].includes(this._status(x))) || list[0];
     const ids = list.flatMap((x) => [...Object.values(x.roles), ...x.outputs, ...x.others, this._power(x)].filter(Boolean));
-    const sig = `${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|${this._armed}|${Math.floor(Date.now() / 30000)}|` + ids.map((id) => this._st(id)?.state ?? "-").join("|");
+    const sig = `${LOCALE}|${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|${this._armed}|${Math.floor(Date.now() / 30000)}|` + ids.map((id) => this._st(id)?.state ?? "-").join("|");
     if (sig === this._sig) return;
     this._sig = sig;
 
     const statuses = list.map((x) => this._status(x));
     const printing = statuses.filter((s) => s === "printing" || s === "paused").length;
-    const title = c.title || (list.length === 1 ? list[0].name : "Imprimantes 3D");
-    const sub = !list.length ? "" : list.length === 1 ? (statuses[0] === "offline" && (list[0].noEntities || this._st(this._power(list[0]))?.state === "off") ? "Éteinte" : STATE[statuses[0]][0])
-      : `${list.length} imprimantes · ${printing ? `${printing} en impression` : "au repos"}`;
+    const title = c.title || (list.length === 1 ? list[0].name : t("title_3d"));
+    const sub = !list.length ? "" : list.length === 1 ? (statuses[0] === "offline" && (list[0].noEntities || this._st(this._power(list[0]))?.state === "off") ? t("st_off") : t(STATE[statuses[0]][0]))
+      : `${t("n_printers", { n: list.length })} · ${printing ? t("n_printing", { n: printing }) : t("all_idle")}`;
 
     let body = "", camShown = null;
     if (!p) {
-      body = `<div class="empty">Aucune imprimante trouvée<span>Ajoutez l'intégration Moonraker (Klipper, via HACS), OctoPrint, PrusaLink ou Bambu Lab, puis rechargez la page.</span></div>`;
+      body = `<div class="empty">${t("none_found")}<span>${t("none_hint_3d")}</span></div>`;
     } else {
       const r = p.roles, status = this._status(p);
       const powerId = c.show_controls === false ? null : this._power(p);
@@ -495,7 +690,8 @@ class PrintersCard extends HTMLElement {
       const isOff = status === "offline" && (powerSt === "off" || (!powerId && p.noEntities));
       // prise allumée mais intégration pas encore revenue : l'imprimante démarre
       const booting = status === "offline" && powerSt === "on" && p.noEntities;
-      const [stLabel, stIcon, stCls] = isOff ? ["Éteinte", "mdi:power-plug-off-outline", "off"] : booting ? ["Démarrage…", "mdi:timer-sand", "warn"] : STATE[status];
+      const [stKey, stIcon, stCls] = isOff ? ["st_off", "mdi:power-plug-off-outline", "off"] : booting ? ["st_booting", "mdi:timer-sand", "warn"] : STATE[status];
+      const stLabel = t(stKey);
       const tabs = list.length > 1 ? `<div class="pc-tabs" role="tablist">${list.map((x, i) => {
         const s = statuses[i], pr = this._num(x.roles.progress);
         return `<button class="pc-tab ${x.id === p.id ? "on" : ""}" role="tab" aria-selected="${x.id === p.id}" data-tab="${esc(x.id)}">
@@ -547,19 +743,19 @@ class PrintersCard extends HTMLElement {
       }
       if (c.show_job !== false && j) {
         const pct = j.pct;
-        job = `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:file-cad-box"></ha-icon>${active ? "Impression" : "Dernière impression"}</div>
+        job = `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:file-cad-box"></ha-icon>${t(active ? "job_active" : "job_last")}</div>
           <div class="pc-job" data-entity="${esc(r.progress || r.filename || "")}">
             ${j.thumb ? `<img class="pc-thumb" src="${esc(j.thumb)}" alt="">` : `<div class="pc-thumb none"><ha-icon icon="mdi:cube-outline"></ha-icon></div>`}
             <div class="pc-jb">
               <div class="pc-file" title="${esc(j.file || "")}">${esc((j.file || "—").replace(/\.(gcode|bgcode|3mf|gco)$/i, ""))}</div>
               <div class="pc-prog"><div class="pc-bar ${j.cls}"><i style="width:${Math.max(0, Math.min(100, pct ?? 0))}%"></i></div><b>${pct === null || pct === undefined ? "—" : `${fmt(pct, pct < 10 && pct > 0 ? 1 : 0)} %`}</b></div>
               <div class="pc-kvs">
-                ${kv(active ? "Écoulé" : "Durée", dur(j.elapsed))}
-                ${active ? kv("Restant", j.left ? dur(j.left) : null) : ""}
-                ${active ? kv("Fin prévue", j.eta ? when(j.eta) : null) : kv({ cancelled: "Annulée", error: "Arrêtée" }[j.result] || "Terminée", j.ended ? when(new Date(j.ended)) : null)}
-                ${kv("Couche", j.layer !== null && j.layer !== undefined && j.layers ? `${fmt(Math.min(j.layer, j.layers))} / ${fmt(j.layers)}` : null)}
-                ${kv("Filament", j.filament ? `${fmt(j.filament, 1)} m` : null)}
-                ${active ? kv("Vitesse", j.speed ? `${fmt(j.speed)} mm/s` : null) : ""}
+                ${kv(t(active ? "elapsed" : "duration"), dur(j.elapsed))}
+                ${active ? kv(t("remaining"), j.left ? dur(j.left) : null) : ""}
+                ${active ? kv(t("eta"), j.eta ? when(j.eta) : null) : kv(t({ cancelled: "res_cancelled", error: "res_error" }[j.result] || "res_complete"), j.ended ? when(new Date(j.ended)) : null)}
+                ${kv(t("layer"), j.layer !== null && j.layer !== undefined && j.layers ? `${fmt(Math.min(j.layer, j.layers))} / ${fmt(j.layers)}` : null)}
+                ${kv(t("filament"), j.filament ? `${fmt(j.filament, 1)} m` : null)}
+                ${active ? kv(t("speed"), j.speed ? `${fmt(j.speed)} mm/s` : null) : ""}
               </div>
             </div>
           </div></div>`;
@@ -571,79 +767,79 @@ class PrintersCard extends HTMLElement {
       const camOn = c.show_camera !== false && camSt && camSt.attributes?.entity_picture && camSt.state !== "unavailable" && status !== "offline";
       camShown = camOn ? camId : null;
       const cam = camOn
-        ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:webcam"></ha-icon>Caméra</div><div class="pc-camw" data-entity="${esc(camId)}">
+        ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:webcam"></ha-icon>${t("camera")}</div><div class="pc-camw" data-entity="${esc(camId)}">
             <div class="pc-cam-slot"></div></div></div>` : "";
 
       // --- températures
       const temp = (cur, tgtNum, tgtSensor, power, icon, label) => {
         const v = this._num(cur);
         if (v === null) return "";
-        const t = this._num(tgtNum) ?? this._num(tgtSensor);
+        const tg = this._num(tgtNum) ?? this._num(tgtSensor);
         const pw = this._num(power);
-        const heating = t !== null && t > 0;
-        const pct = heating ? Math.max(0, Math.min(100, (v / t) * 100)) : 0;
+        const heating = tg !== null && tg > 0;
+        const pct = heating ? Math.max(0, Math.min(100, (v / tg) * 100)) : 0;
         return `<div class="pc-t ${heating ? "hot" : ""}" data-entity="${esc(cur)}">
           <div class="pc-tt"><span><ha-icon icon="${icon}"></ha-icon>${label}</span><b>${fmt(v, v < 100 ? 1 : 0)}<small> °C</small></b></div>
           <div class="pc-tbar"><i style="width:${pct}%"></i></div>
-          <div class="pc-tn">${heating ? `Consigne ${fmt(t)} °C` : v >= 45 ? "Refroidissement" : "Arrêt"}${pw !== null && heating ? ` · chauffe ${fmt(pw)} %` : ""}</div></div>`;
+          <div class="pc-tn">${heating ? t("target", { t: fmt(tg) }) : v >= 45 ? t("cooling") : t("heater_off")}${pw !== null && heating ? ` · ${t("heating", { p: fmt(pw) })}` : ""}</div></div>`;
       };
       const extra = p.others.filter((id) => this._st(id)?.attributes?.unit_of_measurement === "°C" && ![r.ext, r.bed, r.chamber].includes(id)).map((id) => {
         const v = this._num(id);
         if (v === null) return "";
         const raw = id.split(".")[1].replace(/^.*?_(?=[a-z0-9]+_temp(erature)?$)/, "").replace(/_temp(erature)?$/, "");
-        const label = /rockchip|host|rpi|raspberry|cb\d/i.test(raw) ? "Hôte" : /mcu|stm32|board|carte/i.test(raw) ? "Carte" : raw.replace(/_/g, " ");
+        const label = /rockchip|host|rpi|raspberry|cb\d/i.test(raw) ? t("host") : /mcu|stm32|board|carte/i.test(raw) ? t("board") : raw.replace(/_/g, " ");
         return `<span class="pc-x" data-entity="${esc(id)}"><ha-icon icon="mdi:thermometer"></ha-icon>${esc(label)} <b>${fmt(v, 0)} °C</b></span>`;
       }).filter(Boolean);
       const fan = this._num(r.fan);
       const temps = c.show_temps !== false ? [
-        temp(r.ext, r.ext_target, r.ext_target_s, r.ext_power, "mdi:printer-3d-nozzle-heat-outline", "Buse"),
-        temp(r.bed, r.bed_target, r.bed_target_s, r.bed_power, "mdi:radiator", "Plateau"),
-        temp(r.chamber, null, null, null, "mdi:home-thermometer-outline", "Caisson"),
+        temp(r.ext, r.ext_target, r.ext_target_s, r.ext_power, "mdi:printer-3d-nozzle-heat-outline", t("nozzle")),
+        temp(r.bed, r.bed_target, r.bed_target_s, r.bed_power, "mdi:radiator", t("bed")),
+        temp(r.chamber, null, null, null, "mdi:home-thermometer-outline", t("chamber")),
       ].filter(Boolean) : [];
-      const tempsHtml = temps.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:thermometer-lines"></ha-icon>Températures</div>
-        <div class="pc-ts">${temps.join("")}</div>${extra.length || fan !== null ? `<div class="pc-xs">${extra.join("")}${fan !== null ? `<span class="pc-x" data-entity="${esc(r.fan)}"><ha-icon icon="mdi:fan"></ha-icon>Ventilateur <b>${fmt(fan)} %</b></span>` : ""}</div>` : ""}</div>` : "";
+      const tempsHtml = temps.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:thermometer-lines"></ha-icon>${t("temps")}</div>
+        <div class="pc-ts">${temps.join("")}</div>${extra.length || fan !== null ? `<div class="pc-xs">${extra.join("")}${fan !== null ? `<span class="pc-x" data-entity="${esc(r.fan)}"><ha-icon icon="mdi:fan"></ha-icon>${t("fan")} <b>${fmt(fan)} %</b></span>` : ""}</div>` : ""}</div>` : "";
 
       // --- commandes
       const btn = (id, icon, label, cls = "", confirm = false) => {
         if (!id || !this._st(id)) return "";
         const armed = this._armed === id;
-        return `<button class="pc-btn ${cls} ${armed ? "armed" : ""}" data-press="${esc(id)}" ${confirm ? 'data-confirm="1"' : ""} title="${esc(armed ? `${label} : cliquez encore pour confirmer` : label)}">
-          <ha-icon icon="${armed ? "mdi:check-bold" : icon}"></ha-icon><span>${armed ? "Confirmer ?" : label}</span></button>`;
+        return `<button class="pc-btn ${cls} ${armed ? "armed" : ""}" data-press="${esc(id)}" ${confirm ? 'data-confirm="1"' : ""} title="${esc(armed ? t("click_again", { label }) : label)}">
+          <ha-icon icon="${armed ? "mdi:check-bold" : icon}"></ha-icon><span>${armed ? t("confirm_q") : label}</span></button>`;
       };
       // alimentation : allumer d'un clic ; éteindre en deux clics, et jamais pendant une impression
       const powerBtn = (() => {
         if (!powerId || !this._st(powerId) || powerSt === "unavailable") return "";
-        if (powerSt !== "on") return `<button class="pc-btn go" data-power="${esc(powerId)}" data-on="1" title="Allumer l'imprimante"><ha-icon icon="mdi:power"></ha-icon><span>Allumer</span></button>`;
+        if (powerSt !== "on") return `<button class="pc-btn go" data-power="${esc(powerId)}" data-on="1" title="${t("power_on_title")}"><ha-icon icon="mdi:power"></ha-icon><span>${t("power_on")}</span></button>`;
         if (status === "printing" || status === "paused") return "";
         const key = `power:${powerId}`, armed = this._armed === key;
-        return `<button class="pc-btn bad ${armed ? "armed" : ""}" data-power="${esc(powerId)}" title="${armed ? "Éteindre : cliquez encore pour confirmer" : "Éteindre l'imprimante"}"><ha-icon icon="${armed ? "mdi:check-bold" : "mdi:power"}"></ha-icon><span>${armed ? "Confirmer ?" : "Éteindre"}</span></button>`;
+        return `<button class="pc-btn bad ${armed ? "armed" : ""}" data-power="${esc(powerId)}" title="${armed ? t("click_again", { label: t("power_off") }) : t("power_off_title")}"><ha-icon icon="${armed ? "mdi:check-bold" : "mdi:power"}"></ha-icon><span>${armed ? t("confirm_q") : t("power_off")}</span></button>`;
       })();
       const ctl = c.show_controls === false ? [] : status === "offline" ? [powerBtn].filter(Boolean) : [powerBtn,
-        status === "printing" ? btn(r.pause, "mdi:pause", "Pause", "warn") : "",
-        status === "paused" ? btn(r.resume, "mdi:play", "Reprendre", "go") : "",
-        status === "printing" || status === "paused" ? btn(r.cancel, "mdi:stop", "Annuler", "bad", true) : "",
-        status !== "printing" && status !== "paused" ? btn(r.home, "mdi:home-import-outline", "Origine", "", true) : "",
-        btn(r.estop, "mdi:alert-octagon-outline", "Arrêt d'urgence", "bad", true),
+        status === "printing" ? btn(r.pause, "mdi:pause", t("pause"), "warn") : "",
+        status === "paused" ? btn(r.resume, "mdi:play", t("resume"), "go") : "",
+        status === "printing" || status === "paused" ? btn(r.cancel, "mdi:stop", t("cancel"), "bad", true) : "",
+        status !== "printing" && status !== "paused" ? btn(r.home, "mdi:home-import-outline", t("home"), "", true) : "",
+        btn(r.estop, "mdi:alert-octagon-outline", t("estop"), "bad", true),
       ].filter(Boolean);
       const outs = c.show_controls === false ? [] : p.outputs.map((id) => {
         const s = this._st(id);
         if (!s) return "";
         const raw = (s.attributes?.friendly_name || id).replace(new RegExp(`^${p.devName}\\s*`, "i"), "").replace(/^output[_ ]pin[_ ]/i, "");
-        const label = /frame/i.test(raw) ? "Lumière cadre" : /part|nozzle|tool/i.test(raw) ? "Lumière buse" : /light|led|lumi/i.test(raw) ? "Lumière" : raw.replace(/_/g, " ");
-        return `<button class="pc-btn tog ${s.state === "on" ? "on" : ""}" data-toggle="${esc(id)}" title="${esc(label)} : ${s.state === "on" ? "éteindre" : "allumer"}"><ha-icon icon="${s.state === "on" ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"></ha-icon><span>${esc(label)}</span></button>`;
+        const label = /frame/i.test(raw) ? t("light_frame") : /part|nozzle|tool/i.test(raw) ? t("light_nozzle") : /light|led|lumi/i.test(raw) ? t("light") : raw.replace(/_/g, " ");
+        return `<button class="pc-btn tog ${s.state === "on" ? "on" : ""}" data-toggle="${esc(id)}" title="${esc(t("colon", { a: label, b: t(s.state === "on" ? "turn_off_lc" : "turn_on_lc") }))}"><ha-icon icon="${s.state === "on" ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"></ha-icon><span>${esc(label)}</span></button>`;
       }).filter(Boolean);
-      const ctlHtml = ctl.length || outs.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:gesture-tap-button"></ha-icon>Commandes</div>${ctl.length ? `<div class="pc-btns">${ctl.join("")}</div>` : ""}${outs.length ? `<div class="pc-btns pc-outs">${outs.join("")}</div>` : ""}</div>` : "";
+      const ctlHtml = ctl.length || outs.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:gesture-tap-button"></ha-icon>${t("controls")}</div>${ctl.length ? `<div class="pc-btns">${ctl.join("")}</div>` : ""}${outs.length ? `<div class="pc-btns pc-outs">${outs.join("")}</div>` : ""}</div>` : "";
 
       // --- statistiques
       const tot = this._secs(r.total_time), lng = this._secs(r.longest), fil = this._num(r.total_filament), jobs = this._num(r.jobs);
       const stat = (id, icon, label, v) => (v === null ? "" : `<div class="pc-s" data-entity="${esc(id)}"><ha-icon icon="${icon}"></ha-icon><b>${esc(v)}</b><span>${label}</span></div>`);
       const stats = c.show_stats !== false ? [
-        stat(r.jobs, "mdi:counter", "Impressions", jobs === null ? null : fmt(jobs)),
-        stat(r.total_time, "mdi:timer-outline", "Temps total", tot === null ? null : `${fmt(Math.round(tot / 3600))} h`),
-        stat(r.total_filament, "mdi:printer-3d-nozzle-outline", "Filament", fil === null ? null : fil >= 1000 ? `${fmt(fil / 1000, 2)} km` : `${fmt(fil)} m`),
-        stat(r.longest, "mdi:trophy-outline", "Plus longue", dur(lng)),
+        stat(r.jobs, "mdi:counter", t("jobs"), jobs === null ? null : fmt(jobs)),
+        stat(r.total_time, "mdi:timer-outline", t("total_time"), tot === null ? null : `${fmt(Math.round(tot / 3600))} h`),
+        stat(r.total_filament, "mdi:printer-3d-nozzle-outline", t("filament"), fil === null ? null : fil >= 1000 ? `${fmt(fil / 1000, 2)} km` : `${fmt(fil)} m`),
+        stat(r.longest, "mdi:trophy-outline", t("longest"), dur(lng)),
       ].filter(Boolean) : [];
-      const statsHtml = stats.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:chart-box-outline"></ha-icon>Statistiques</div><div class="pc-ss">${stats.join("")}</div></div>` : "";
+      const statsHtml = stats.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:chart-box-outline"></ha-icon>${t("stats")}</div><div class="pc-ss">${stats.join("")}</div></div>` : "";
 
       const devHtml = c.show_device !== false ? deviceBlock(this._hass, p.links || [p.id]) : "";
       body = tabs + `<div class="pc-sec">${state}</div>` + job + cam + tempsHtml + ctlHtml + statsHtml + devHtml;
@@ -678,22 +874,22 @@ function deviceBlock(hass, devIds, extraUrls = []) {
   const sw = devs.map((d) => d.sw_version).find(Boolean);
   const pills = [];
   if (host) {
-    const inner = `<ha-icon icon="mdi:ip-network-outline"></ha-icon>Adresse <b>${esc(host)}</b>${url ? `<ha-icon class="po-ext" icon="mdi:open-in-new"></ha-icon>` : ""}`;
-    pills.push(url ? `<a class="pc-x po-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Ouvrir la page de l'imprimante">${inner}</a>` : `<span class="pc-x">${inner}</span>`);
+    const inner = `<ha-icon icon="mdi:ip-network-outline"></ha-icon>${t("address")} <b>${esc(host)}</b>${url ? `<ha-icon class="po-ext" icon="mdi:open-in-new"></ha-icon>` : ""}`;
+    pills.push(url ? `<a class="pc-x po-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${t("open_page")}">${inner}</a>` : `<span class="pc-x">${inner}</span>`);
   }
   const ups = Object.entries(hass.entities || {}).filter(([id, e]) => id.startsWith("update.") && devIds.includes(e.device_id) && !e.hidden && hass.states?.[id]).map(([id]) => id);
   // version installée seule quand aucune entité de mise à jour ne la donne déjà
-  if (sw && !ups.length) pills.push(`<span class="pc-x"><ha-icon icon="mdi:chip"></ha-icon>Micrologiciel <b>${esc(sw)}</b></span>`);
+  if (sw && !ups.length) pills.push(`<span class="pc-x"><ha-icon icon="mdi:chip"></ha-icon>${t("firmware")} <b>${esc(sw)}</b></span>`);
   for (const id of ups) {
     const st = hass.states?.[id];
     if (!st) continue;
     const a = st.attributes || {}, name = String(a.title || a.friendly_name || "").replace(dev.name_by_user || dev.name || "", "").trim();
-    const what = name || "Micrologiciel";
+    const what = name || t("firmware");
     pills.push(st.state === "on"
-      ? `<span class="pc-x po-upd" data-entity="${esc(id)}" title="Ouvrir pour installer la mise à jour"><ha-icon icon="mdi:package-up"></ha-icon>${esc(what)} : mise à jour <b>${esc(a.installed_version || "?")} → ${esc(a.latest_version || "?")}</b></span>`
-      : `<span class="pc-x" data-entity="${esc(id)}"><ha-icon icon="mdi:check-circle-outline"></ha-icon>${esc(what)} <b>${esc(a.installed_version || "")}</b> à jour</span>`);
+      ? `<span class="pc-x po-upd" data-entity="${esc(id)}" title="${t("open_to_install")}"><ha-icon icon="mdi:package-up"></ha-icon>${esc(t("colon", { a: what, b: t("update") }))} <b>${esc(a.installed_version || "?")} → ${esc(a.latest_version || "?")}</b></span>`
+      : `<span class="pc-x" data-entity="${esc(id)}"><ha-icon icon="mdi:check-circle-outline"></ha-icon>${esc(what)} <b>${esc(a.installed_version || "")}</b> ${t("up_to_date")}</span>`);
   }
-  return pills.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:information-outline"></ha-icon>Appareil</div><div class="pc-xs">${pills.join("")}</div></div>` : "";
+  return pills.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:information-outline"></ha-icon>${t("device")}</div><div class="pc-xs">${pills.join("")}</div></div>` : "";
 }
 
 /* ------------------------------------------------------------------ style */
@@ -743,8 +939,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-bar { flex: 1; height: 9px; border-radius: 6px; background: var(--med-line); overflow: hidden; }
 .pc-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--med-accent, var(--med-blue)), var(--med-green)); }
 .pc-bar.warn i { background: var(--pc-warn); } .pc-bar.bad i { background: var(--t-red); } .pc-bar.ok i { background: var(--med-down); }
-.pc-kvs { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 2px 12px; }
-.pc-kv { display: flex; justify-content: space-between; gap: 6px; font-size: .76rem; color: var(--med-muted); }
+.pc-kvs { display: flex; flex-wrap: wrap; gap: 2px 16px; }
+.pc-kv { flex: 1 0 auto; display: flex; justify-content: space-between; gap: 6px; font-size: .76rem; color: var(--med-muted); }
 .pc-kv b { color: var(--med-text); font-weight: 600; white-space: nowrap; }
 .pc-camw { border-radius: 12px; overflow: hidden; border: 1px solid var(--med-line); background: #000; cursor: pointer; }
 .pc-cam { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
@@ -803,15 +999,15 @@ ha-card.th-v2.light { --med-bg: #ffffff; --med-surface: #f2f5f9; --med-line: #db
 
 /* ----------------------------------------------------------------- éditeur */
 
-const SCHEMA = [
+const SCHEMA = () => [
   { name: "title", selector: { text: {} } },
   { name: "icon", selector: { icon: {} } },
   { name: "icon_color", selector: { text: {} } },
   { name: "printers", selector: { device: { multiple: true, filter: [{ integration: "moonraker" }, { integration: "octoprint" }, { integration: "prusalink" }, { integration: "bambu_lab" }] } } },
   { name: "camera", selector: { entity: { domain: "camera" } } },
   { name: "camera_mode", selector: { select: { mode: "dropdown", options: [
-    { value: "live", label: "Vidéo en direct" },
-    { value: "snapshot", label: "Image par image (moins de réseau)" }] } } },
+    { value: "live", label: t("opt_live") },
+    { value: "snapshot", label: t("opt_snapshot") }] } } },
   { name: "camera_refresh", selector: { number: { min: 2, max: 60, mode: "box", unit_of_measurement: "s" } } },
   { name: "show_job", selector: { boolean: {} } },
   { name: "show_camera", selector: { boolean: {} } },
@@ -820,34 +1016,20 @@ const SCHEMA = [
   { name: "show_stats", selector: { boolean: {} } },
   { name: "show_device", selector: { boolean: {} } },
   { name: "theme", selector: { select: { mode: "dropdown", options: [
-    { value: "v2", label: "Style MyElectricalData (bleu nuit)" },
-    { value: "auto", label: "Style MyElectricalData, clair ou sombre selon Home Assistant" },
-    { value: "ha", label: "Thème Home Assistant (clair ou sombre)" }] } } },
+    { value: "v2", label: t("opt_v2") },
+    { value: "auto", label: t("opt_auto") },
+    { value: "ha", label: t("opt_ha") }] } } },
 ];
-const LABELS = {
-  title: "Titre (vide = nom de l'imprimante, ou Imprimantes 3D)",
-  icon: "Icône",
-  icon_color: "Couleur de l'icône",
-  printers: "Imprimantes affichées, dans cet ordre (vide = toutes)",
-  camera: "Caméra (vide = celle de l'imprimante)",
-  camera_mode: "Affichage de la caméra",
-  camera_refresh: "Rafraîchissement en mode image par image",
-  show_job: "Impression en cours",
-  show_camera: "Caméra",
-  show_temps: "Températures",
-  show_controls: "Commandes (pause, reprise, annulation, arrêt d'urgence, lumières)",
-  show_stats: "Statistiques",
-  show_device: "Appareil (adresse IP, micrologiciel, mises à jour)",
-  theme: "Couleurs de la carte",
-};
+/** Libellé d'un champ de l'éditeur : clé ed_<champ> (I18N). */
+const edLabel = (name, card) => t(name === "title" ? `ed_title_${card}` : `ed_${name}`);
 class PrintersCardEditor extends HTMLElement {
   setConfig(config) { this._config = { ...config }; this._draw(); }
-  set hass(hass) { this._hass = hass; if (this._form) this._form.hass = hass; else this._draw(); }
+  set hass(hass) { setLang(hass); this._hass = hass; if (this._form) this._form.hass = hass; else this._draw(); }
   _draw() {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => LABELS[s.name] || s.name;
+      this._form.computeLabel = (s) => edLabel(s.name, "3d");
       this._form.addEventListener("value-changed", (ev) => {
         this._config = { ...ev.detail.value };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -855,7 +1037,7 @@ class PrintersCardEditor extends HTMLElement {
       this.appendChild(this._form);
     }
     this._form.hass = this._hass;
-    this._form.schema = SCHEMA;
+    this._form.schema = SCHEMA();
     this._form.data = { ...DEFAULTS, ...this._config };
   }
 }
@@ -902,34 +1084,34 @@ const officeRole = (id, e) => {
 };
 /** Couleur et libellé d'un consommable d'après son nom. */
 const INKS = [
-  [/photo[_ ]?(black|noir)/, "#3a3a3a", "Noir photo"], [/(black|noir|\bbk\b|_k$|_bk_)/, "#1b1b1b", "Noir"],
-  [/(light[_ ]?cyan|cyan[_ ]?clair)/, "#7fd6f5", "Cyan clair"], [/(photo[_ ]?cyan|cyan[_ ]?photo|\bpc\b)/, "#5cc8f0", "Cyan photo"], [/cyan/, "#00a3e0", "Cyan"],
-  [/(light[_ ]?magenta|magenta[_ ]?clair)/, "#f5a0d4", "Magenta clair"], [/(photo[_ ]?magenta|magenta[_ ]?photo|\bpm\b)/, "#f06cbc", "Magenta photo"], [/magenta/, "#e5007e", "Magenta"],
-  [/(yellow|jaune)/, "#ffd400", "Jaune"], [/(tri[_ -]?colou?r|colou?r|couleur|cmy)/, "linear-gradient(90deg, #00a3e0 0 33.3%, #e5007e 0 66.6%, #ffd400 0)", "Couleur"],
-  [/(light[_ ]?gr[ae]y|gris[_ ]?clair|\blgy\b)/, "#c2c2c2", "Gris clair"], [/(grey|gray|gris|\bgy\b)/, "#8a8a8a", "Gris"], [/(red|rouge)/, "#d7263d", "Rouge"], [/(blue|bleu)/, "#2251cc", "Bleu"],
+  [/photo[_ ]?(black|noir)/, "#3a3a3a", "ink_photo_black"], [/(black|noir|\bbk\b|_k$|_bk_)/, "#1b1b1b", "ink_black"],
+  [/(light[_ ]?cyan|cyan[_ ]?clair)/, "#7fd6f5", "ink_light_cyan"], [/(photo[_ ]?cyan|cyan[_ ]?photo|\bpc\b)/, "#5cc8f0", "ink_photo_cyan"], [/cyan/, "#00a3e0", "ink_cyan"],
+  [/(light[_ ]?magenta|magenta[_ ]?clair)/, "#f5a0d4", "ink_light_magenta"], [/(photo[_ ]?magenta|magenta[_ ]?photo|\bpm\b)/, "#f06cbc", "ink_photo_magenta"], [/magenta/, "#e5007e", "ink_magenta"],
+  [/(yellow|jaune)/, "#ffd400", "ink_yellow"], [/(tri[_ -]?colou?r|colou?r|couleur|cmy)/, "linear-gradient(90deg, #00a3e0 0 33.3%, #e5007e 0 66.6%, #ffd400 0)", "ink_color"],
+  [/(light[_ ]?gr[ae]y|gris[_ ]?clair|\blgy\b)/, "#c2c2c2", "ink_light_gray"], [/(grey|gray|gris|\bgy\b)/, "#8a8a8a", "ink_gray"], [/(red|rouge)/, "#d7263d", "ink_red"], [/(blue|bleu)/, "#2251cc", "ink_blue"],
 ];
 const inkOf = (s) => {
-  const t = String(s || "").toLowerCase();
-  const m = INKS.find(([re]) => re.test(t));
-  return m ? { color: m[1], label: m[2] } : { color: "var(--med-muted)", label: null };
+  const txt = String(s || "").toLowerCase();
+  const m = INKS.find(([re]) => re.test(txt));
+  return m ? { color: m[1], label: t(m[2]) } : { color: "var(--med-muted)", label: null };
 };
 const PARTS = [
-  [/drum|tambour/, "Tambour", "mdi:cylinder"], [/fuser|fixation/, "Unité de fixation", "mdi:fire"], [/belt|courroie/, "Courroie", "mdi:transit-connection-horizontal"],
-  [/laser/, "Laser", "mdi:laser-pointer"], [/pf_kit|kit/, "Kit papier", "mdi:tray-full"], [/waste|recup|clean|maintenance/, "Réservoir de maintenance", "mdi:delete-variant"],
+  [/drum|tambour/, "part_drum", "mdi:cylinder"], [/fuser|fixation/, "part_fuser", "mdi:fire"], [/belt|courroie/, "part_belt", "mdi:transit-connection-horizontal"],
+  [/laser/, "part_laser", "mdi:laser-pointer"], [/pf_kit|kit/, "part_pf_kit", "mdi:tray-full"], [/waste|recup|clean|maintenance/, "part_maintenance", "mdi:delete-variant"],
 ];
-/** Raisons IPP (printer-state-reasons) et états Brother les plus courants, en français. */
+/** Raisons IPP (printer-state-reasons) et états Brother les plus courants → clé du message (I18N). */
 const REASONS = [
-  [/media[-_ ]?(empty|needed)|paper[-_ ]?(out|empty)|no[-_ ]?paper|plus de papier/i, "Plus de papier", "bad"],
-  [/media[-_ ]?jam|paper[-_ ]?jam|jam|bourrage/i, "Bourrage papier", "bad"],
-  [/(cover|door)[-_ ]?open|capot/i, "Capot ouvert", "bad"],
-  [/(toner|marker[-_ ]?supply|ink)[-_ ]?(empty)|replace[-_ ]?(toner|ink)|remplacer/i, "Consommable vide : à remplacer", "bad"],
-  [/(toner|marker[-_ ]?supply|ink)[-_ ]?low|low[-_ ]?(toner|ink)|bas/i, "Encre ou toner bas", "warn"],
-  [/offline|hors[-_ ]?ligne|connecting/i, "Hors ligne", "off"],
-  [/sleep|veille|power[-_ ]?sav/i, "En veille", "ok"],
+  [/media[-_ ]?(empty|needed)|paper[-_ ]?(out|empty)|no[-_ ]?paper|plus de papier/i, "r_no_paper", "bad"],
+  [/media[-_ ]?jam|paper[-_ ]?jam|jam|bourrage/i, "r_jam", "bad"],
+  [/(cover|door)[-_ ]?open|capot/i, "r_cover", "bad"],
+  [/(toner|marker[-_ ]?supply|ink)[-_ ]?(empty)|replace[-_ ]?(toner|ink)|remplacer/i, "r_supply_empty", "bad"],
+  [/(toner|marker[-_ ]?supply|ink)[-_ ]?low|low[-_ ]?(toner|ink)|bas/i, "r_supply_low", "warn"],
+  [/offline|hors[-_ ]?ligne|connecting/i, "st_offline", "off"],
+  [/sleep|veille|power[-_ ]?sav/i, "st_sleep", "ok"],
 ];
 const OFFICE_STATE = {
-  idle: ["Prête", "mdi:printer-check", "ok"], printing: ["Impression en cours", "mdi:printer", "print"], sleep: ["En veille", "mdi:printer-pos-sleep-outline", "ok"],
-  stopped: ["Arrêtée", "mdi:printer-off", "warn"], error: ["Erreur", "mdi:printer-alert", "bad"], offline: ["Hors ligne", "mdi:printer-off-outline", "off"],
+  idle: ["st_idle", "mdi:printer-check", "ok"], printing: ["st_printing", "mdi:printer", "print"], sleep: ["st_sleep", "mdi:printer-pos-sleep-outline", "ok"],
+  stopped: ["st_stopped", "mdi:printer-off", "warn"], error: ["st_error", "mdi:printer-alert", "bad"], offline: ["st_offline", "mdi:printer-off-outline", "off"],
 };
 const officeNorm = (s) => {
   const t = String(s ?? "").trim().toLowerCase();
@@ -984,6 +1166,7 @@ class PrintersOfficeCard extends HTMLElement {
   }
 
   set hass(hass) {
+    setLang(hass);
     if (this._hass?.entities !== hass.entities || this._hass?.devices !== hass.devices) this._map = null;
     this._hass = hass;
     this._render();
@@ -1024,7 +1207,7 @@ class PrintersOfficeCard extends HTMLElement {
     let list = Object.values(byDev).filter((d) => d.known || d.supplies.some((id) => /%/.test(this._st(id)?.attributes?.unit_of_measurement || "")));
     for (const d of list) {
       const dev = devs[d.id] || {};
-      d.name = dev.name_by_user || dev.name || OFFICE_PLATFORMS[d.platform] || "Imprimante";
+      d.name = dev.name_by_user || dev.name || OFFICE_PLATFORMS[d.platform] || t("printer");
       d.model = [dev.manufacturer, dev.model].filter(Boolean).filter((v, i, a) => a.findIndex((x) => x.toLowerCase() === v.toLowerCase()) === i).join(" ");
     }
     const want = (Array.isArray(c.printers) ? c.printers : c.printers ? [c.printers] : []).map((x) => (typeof x === "object" ? x : { device: x }));
@@ -1033,7 +1216,7 @@ class PrintersOfficeCard extends HTMLElement {
         const d = list.find((x) => x.id === w.device || x.name.toLowerCase() === String(w.device || "").toLowerCase());
         return d ? { ...d, name: w.name || d.name } : null;
       }).filter(Boolean);
-    } else list.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    } else list.sort((a, b) => a.name.localeCompare(b.name, LOCALE));
     this._map = list;
     return list;
   }
@@ -1059,7 +1242,7 @@ class PrintersOfficeCard extends HTMLElement {
     // message libre de l'imprimante (state_message), sans gravité propre
     const freeMsg = a.state_message && a.state_message !== "none" ? String(a.state_message) : null;
     if (!reason && freeMsg) { const r = REASONS.find(([re]) => re.test(freeMsg)); if (r) reason = [r[1], r[2] === "bad" ? "warn" : r[2]]; }
-    let msg = reason ? reason[0] : freeMsg;
+    let msg = reason ? t(reason[0]) : freeMsg;
     let cls = OFFICE_STATE[key][2];
     if (reason) {
       const stopped = key === "stopped" || key === "error";
@@ -1079,7 +1262,7 @@ class PrintersOfficeCard extends HTMLElement {
       const name = (s.attributes?.friendly_name || id).replace(new RegExp(`^${p.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*`, "i"), "");
       const ink = inkOf(`${id} ${name}`);
       const lowAt = Number(s.attributes?.marker_low_level) || low;
-      const kind = /toner/i.test(`${id} ${name}`) ? "toner" : "encre";
+      const kind = /toner/i.test(`${id} ${name}`) ? "toner" : "ink";
       return { id, v: Math.max(0, Math.min(100, v)), color: ink.color, label: ink.label || name.replace(/_/g, " "), kind, low: v <= lowAt, empty: v <= 2 };
     }).filter(Boolean).sort((a, b) => {
       const byColor = INKS.findIndex(([, c]) => c === a.color) - INKS.findIndex(([, c]) => c === b.color);
@@ -1099,19 +1282,19 @@ class PrintersOfficeCard extends HTMLElement {
     if (idx < 0) idx = Math.max(0, list.findIndex((x, i) => alertOf(i)));
     const p = list[idx];
     const ids = list.flatMap((x) => [...Object.values(x.roles), ...x.supplies, ...x.parts]);
-    const sig = `${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|` + ids.map((id) => { const s = this._st(id); return `${s?.state}${s?.attributes?.state_reason || ""}`; }).join("|");
+    const sig = `${LOCALE}|${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|` + ids.map((id) => { const s = this._st(id); return `${s?.state}${s?.attributes?.state_reason || ""}`; }).join("|");
     if (sig === this._sig) return;
     this._sig = sig;
 
     const nAlert = list.filter((x, i) => alertOf(i)).length;
-    const title = c.title || (list.length === 1 ? list[0].name : "Imprimantes");
+    const title = c.title || (list.length === 1 ? list[0].name : t("title_office"));
     // une seule imprimante : son modèle (l'état est juste en dessous)
     const sub = !list.length ? "" : list.length === 1 ? (list[0].model && list[0].model.toLowerCase() !== list[0].name.toLowerCase() ? list[0].model : "")
-      : `${list.length} imprimantes · ${nAlert ? `${nAlert} à surveiller` : "tout va bien"}`;
+      : `${t("n_printers", { n: list.length })} · ${nAlert ? t("n_attention", { n: nAlert }) : t("all_good")}`;
 
     let body = "";
     if (!p) {
-      body = `<div class="empty">Aucune imprimante trouvée<span>Ajoutez l'intégration Internet Printing Protocol (IPP) ou Brother, puis rechargez la page.</span></div>`;
+      body = `<div class="empty">${t("none_found")}<span>${t("none_hint_office")}</span></div>`;
     } else {
       const { st, sup } = infos[idx], r = p.roles;
       const tabs = list.length > 1 ? `<div class="pc-tabs" role="tablist">${list.map((x, i) => {
@@ -1119,34 +1302,35 @@ class PrintersOfficeCard extends HTMLElement {
         return `<button class="pc-tab ${i === idx ? "on" : ""}" role="tab" aria-selected="${i === idx}" data-tab="${esc(x.id)}"><i class="pc-dot ${dot}"></i>${esc(x.name)}</button>`;
       }).join("")}</div>` : "";
 
-      const [label, icon] = OFFICE_STATE[st.key];
+      const [labelKey, icon] = OFFICE_STATE[st.key], label = t(labelKey);
       const lowOnes = sup.filter((s) => s.low);
-      const note = st.msg || (lowOnes.length ? `${lowOnes.map((s) => s.label).join(", ")} : ${lowOnes.some((s) => s.empty) ? "à remplacer" : "bientôt vide"}` : p.model && p.model.toLowerCase() !== p.name.toLowerCase() ? p.model : null);
+      const note = st.msg || (lowOnes.length ? t("colon", { a: lowOnes.map((s) => s.label).join(", "), b: t(lowOnes.some((s) => s.empty) ? "replace_lc" : "almost_empty") }) : p.model && p.model.toLowerCase() !== p.name.toLowerCase() ? p.model : null);
       const stateCls = st.cls === "ok" && lowOnes.length ? "warn" : st.cls;
       const state = `<div class="pc-sec"><div class="pc-state ${stateCls === "off" ? "" : stateCls}" data-entity="${esc(r.status || sup[0]?.id || "")}">
         <ha-icon icon="${icon}"></ha-icon><div><b>${label}</b>${note ? `<span>${esc(note)}</span>` : ""}</div></div></div>`;
 
       // --- encre ou toner : une jauge verticale par couleur
-      const kind = sup.every((s) => s.kind === "toner") ? "Toner" : sup.every((s) => s.kind === "encre") ? "Encre" : "Encre et toner";
+      const kind = t(sup.every((s) => s.kind === "toner") ? "kind_toner" : sup.every((s) => s.kind === "ink") ? "kind_ink" : "kind_both");
       const supHtml = c.show_supplies !== false && sup.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:water-outline"></ha-icon>${kind}</div>
-        <div class="po-inks" style="--po-cols:${sup.length <= 6 ? sup.length : Math.ceil(sup.length / Math.ceil(sup.length / 6))}">${sup.map((s) => `<div class="po-ink ${s.low ? "low" : ""}" data-entity="${esc(s.id)}" title="${esc(s.label)} : ${fmt(s.v)} %">
+        <div class="po-inks" style="--po-cols:${sup.length <= 6 ? sup.length : Math.ceil(sup.length / Math.ceil(sup.length / 6))}">${sup.map((s) => `<div class="po-ink ${s.low ? "low" : ""}" data-entity="${esc(s.id)}" title="${esc(t("colon", { a: s.label, b: `${fmt(s.v)} %` }))}">
           <div class="po-tank"><i style="height:${s.v}%;background:${s.color}"></i></div>
-          <b>${fmt(s.v)} %</b><span>${esc(s.label)}</span>${s.low ? `<em>${s.empty ? "À remplacer" : "Bas"}</em>` : ""}</div>`).join("")}</div></div>` : "";
+          <b>${fmt(s.v)} %</b><span>${esc(s.label)}</span>${s.low ? `<em>${t(s.empty ? "replace" : "low")}</em>` : ""}</div>`).join("")}</div></div>` : "";
 
       // --- pièces d'usure
       const parts = c.show_parts !== false ? p.parts.map((id) => {
         const v = this._num(id);
         if (v === null) return "";
         const name = `${id} ${this._st(id)?.attributes?.friendly_name || ""}`.toLowerCase();
-        const [, plabel, picon] = PARTS.find(([re]) => re.test(name)) || [null, (this._st(id)?.attributes?.friendly_name || id).replace(p.name, "").trim(), "mdi:cog-outline"];
+        const part = PARTS.find(([re]) => re.test(name));
+        const [plabel, picon] = part ? [t(part[1]), part[2]] : [(this._st(id)?.attributes?.friendly_name || id).replace(p.name, "").trim(), "mdi:cog-outline"];
         const ink = inkOf(name);
-        // tambour par couleur (imprimantes laser couleur) : « Tambour cyan »
-        const label2 = ink.label && /drum|tambour/.test(name) && /(black|cyan|magenta|yellow|noir|jaune)/.test(name) ? `${plabel} ${ink.label.toLowerCase()}` : plabel;
+        // tambour par couleur (imprimantes laser couleur) : « Tambour cyan », « Cyan drum »
+        const label2 = ink.label && /drum|tambour/.test(name) && /(black|cyan|magenta|yellow|noir|jaune)/.test(name) ? t("part_color", { part: plabel, part_lc: plabel.toLowerCase(), color: ink.label, color_lc: ink.label.toLowerCase() }) : plabel;
         const lowp = v <= (Number(c.low_level) || 15);
         return `<div class="po-part ${lowp ? "low" : ""}" data-entity="${esc(id)}"><ha-icon icon="${picon}"></ha-icon><span>${esc(label2)}</span>
           <div class="pc-bar ${lowp ? "warn" : "ok"}"><i style="width:${Math.max(0, Math.min(100, v))}%"></i></div><b>${fmt(v)} %</b></div>`;
       }).filter(Boolean) : [];
-      const partsHtml = parts.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:cogs"></ha-icon>Pièces d'usure</div><div class="po-parts">${parts.join("")}</div></div>` : "";
+      const partsHtml = parts.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:cogs"></ha-icon>${t("parts")}</div><div class="po-parts">${parts.join("")}</div></div>` : "";
 
       // --- compteurs et durée de fonctionnement
       const stat = (id, ic, lab, v) => (v === null || v === undefined ? "" : `<div class="pc-s" data-entity="${esc(id)}"><ha-icon icon="${ic}"></ha-icon><b>${esc(v)}</b><span>${lab}</span></div>`);
@@ -1155,13 +1339,13 @@ class PrintersOfficeCard extends HTMLElement {
       if (ups && Number.isNaN(Number(ups)) && !Number.isNaN(Date.parse(ups))) up = dur((Date.now() - Date.parse(ups)) / 1000);
       else if (this._num(r.uptime) !== null) up = dur(this._num(r.uptime));
       const counters = c.show_counters !== false ? [
-        stat(r.pages, "mdi:file-document-multiple-outline", "Pages", this._num(r.pages) === null ? null : fmt(this._num(r.pages))),
-        stat(r.bw, "mdi:file-document-outline", "Noir et blanc", this._num(r.bw) === null ? null : fmt(this._num(r.bw))),
-        stat(r.color, "mdi:palette-outline", "Couleur", this._num(r.color) === null ? null : fmt(this._num(r.color))),
-        stat(r.duplex, "mdi:book-open-page-variant-outline", "Recto verso", this._num(r.duplex) === null ? null : fmt(this._num(r.duplex))),
-        stat(r.uptime, "mdi:power", "Allumée depuis", up),
+        stat(r.pages, "mdi:file-document-multiple-outline", t("pages"), this._num(r.pages) === null ? null : fmt(this._num(r.pages))),
+        stat(r.bw, "mdi:file-document-outline", t("bw"), this._num(r.bw) === null ? null : fmt(this._num(r.bw))),
+        stat(r.color, "mdi:palette-outline", t("color"), this._num(r.color) === null ? null : fmt(this._num(r.color))),
+        stat(r.duplex, "mdi:book-open-page-variant-outline", t("duplex"), this._num(r.duplex) === null ? null : fmt(this._num(r.duplex))),
+        stat(r.uptime, "mdi:power", t("uptime"), up),
       ].filter(Boolean) : [];
-      const countHtml = counters.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:counter"></ha-icon>Compteurs</div><div class="pc-ss">${counters.join("")}</div></div>` : "";
+      const countHtml = counters.length ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:counter"></ha-icon>${t("counters")}</div><div class="pc-ss">${counters.join("")}</div></div>` : "";
 
       const uri = this._st(r.status)?.attributes?.uri_supported;
       const devHtml = c.show_device !== false ? deviceBlock(this._hass, [p.id], Array.isArray(uri) ? uri : String(uri || "").split(/[,\s]+/)) : "";
@@ -1198,7 +1382,7 @@ const OFFICE_STYLE = `<style>
 .po-part b { min-width: 42px; text-align: right; }
 </style>`;
 
-const OFFICE_SCHEMA = [
+const OFFICE_SCHEMA = () => [
   { name: "title", selector: { text: {} } },
   { name: "icon", selector: { icon: {} } },
   { name: "icon_color", selector: { text: {} } },
@@ -1206,32 +1390,19 @@ const OFFICE_SCHEMA = [
   { name: "low_level", selector: { number: { min: 1, max: 50, mode: "box", unit_of_measurement: "%" } } },
   { name: "show_supplies", selector: { boolean: {} } },
   { name: "supplies_sort", selector: { select: { mode: "dropdown", options: [
-    { value: "color", label: "Par couleur (noir, cyan, magenta, jaune)" },
-    { value: "level", label: "Par niveau, de la plus vide à la plus pleine" }] } } },
+    { value: "color", label: t("opt_sort_color") },
+    { value: "level", label: t("opt_sort_level") }] } } },
   { name: "show_parts", selector: { boolean: {} } },
   { name: "show_counters", selector: { boolean: {} } },
   { name: "show_device", selector: { boolean: {} } },
-  SCHEMA.find((s) => s.name === "theme"),
+  SCHEMA().find((s) => s.name === "theme"),
 ];
-const OFFICE_LABELS = {
-  title: "Titre (vide = nom de l'imprimante, ou Imprimantes)",
-  icon: "Icône",
-  icon_color: "Couleur de l'icône",
-  printers: "Imprimantes affichées, dans cet ordre (vide = toutes)",
-  low_level: "Alerte quand l'encre ou le toner descend sous",
-  show_supplies: "Encre et toner",
-  supplies_sort: "Ordre des cartouches",
-  show_parts: "Pièces d'usure (tambour, unité de fixation…)",
-  show_counters: "Compteurs de pages",
-  show_device: "Appareil (adresse IP, micrologiciel, mises à jour)",
-  theme: "Couleurs de la carte",
-};
 class PrintersOfficeCardEditor extends PrintersCardEditor {
   _draw() {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => OFFICE_LABELS[s.name] || s.name;
+      this._form.computeLabel = (s) => edLabel(s.name, "office");
       this._form.addEventListener("value-changed", (ev) => {
         this._config = { ...ev.detail.value };
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -1239,20 +1410,22 @@ class PrintersOfficeCardEditor extends PrintersCardEditor {
       this.appendChild(this._form);
     }
     this._form.hass = this._hass;
-    this._form.schema = OFFICE_SCHEMA;
+    this._form.schema = OFFICE_SCHEMA();
     this._form.data = { ...OFFICE_DEFAULTS, ...this._config };
   }
 }
 
 if (typeof customElements !== "undefined") {
+  // sélecteur de cartes : enregistré avant que hass soit connu, donc dans la langue de l'interface si elle est déjà chargée
+  setLang(document.querySelector("home-assistant")?.hass);
   if (!customElements.get("printers-card")) customElements.define("printers-card", PrintersCard);
   if (!customElements.get("printers-card-editor")) customElements.define("printers-card-editor", PrintersCardEditor);
   window.customCards = window.customCards || [];
   if (!window.customCards.some((c) => c.type === "printers-card")) {
     window.customCards.push({
       type: "printers-card",
-      name: "Carte Imprimantes 3D",
-      description: "État, impression en cours, caméra, températures, commandes et statistiques des imprimantes 3D (Moonraker, OctoPrint, PrusaLink, Bambu Lab).",
+      name: t("card_3d_name"),
+      description: t("card_3d_desc"),
       preview: true,
     });
   }
@@ -1261,8 +1434,8 @@ if (typeof customElements !== "undefined") {
   if (!window.customCards.some((c) => c.type === "printers-office-card")) {
     window.customCards.push({
       type: "printers-office-card",
-      name: "Carte Imprimantes de bureau",
-      description: "État, encre ou toner, pièces d'usure et compteurs de pages des imprimantes de bureau (IPP, Brother).",
+      name: t("card_office_name"),
+      description: t("card_office_desc"),
       preview: true,
     });
   }
