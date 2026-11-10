@@ -89,8 +89,22 @@ const ROLES = [
   ["home", "button", /_(home_all_axes)$/],
   ["filament_sensor", "binary_sensor", /_(filament_sensor|filament_runout)$/],
 ];
-const roleOf = (id) => {
-  const domain = id.split(".")[0];
+/**
+ * Clés de traduction (translation_key) dont le rôle ne se déduit pas de ROLES : le nom anglais de l'entité
+ * suit ROLES, mais pas sa clé (ex. target_nozzle_temp, qui serait prise pour la température de la buse).
+ */
+const TK_ROLES = {
+  bambu_lab: { chamber_temp: "chamber", target_nozzle_temp: "ext_target_s", left_target_nozzle_temp: "ext_target_s",
+    right_target_nozzle_temp: "ext_target_s", gcode_file: "filename", subtask_name: "filename" },
+  octoprint: { status: "state" },
+};
+const roleOf = (id, e) => {
+  const domain = id.split(".")[0], tk = e?.translation_key;
+  // clé de traduction d'abord : l'entity_id suit la langue de Home Assistant (« sensor.x1c_druckfortschritt » en allemand)
+  if (tk) {
+    if (TK_ROLES[e.platform]?.[tk]) return TK_ROLES[e.platform][tk];
+    for (const [role, d, re] of ROLES) if (d === domain && re.test(`_${tk}`)) return role;
+  }
   for (const [role, d, re] of ROLES) if (d === domain && re.test(id)) return role;
   if (domain === "camera") return /thumbnail|miniature|cover|preview|apercu/.test(id) ? "thumbnail" : "camera";
   if (domain === "switch" || domain === "light") return "output";
@@ -382,7 +396,7 @@ class PrintersCard extends HTMLElement {
     for (const [id, e] of Object.entries(hass.entities || {})) {
       // une imprimante éteinte reste affichée (hors ligne), même si l'intégration n'a pas pu démarrer
       if (!PLATFORMS[e.platform] || e.hidden) continue;
-      const role = roleOf(id);
+      const role = roleOf(id, e);
       if (!role) continue;
       const key = e.device_id || `${e.platform}:${e.config_entry_id || "x"}`;
       const d = (byDev[key] ||= { id: key, platform: e.platform, roles: {}, outputs: [], others: [], cameras: [] });
@@ -433,7 +447,7 @@ class PrintersCard extends HTMLElement {
     if (p.power === false || c.power === false) return null;
     if (typeof p.power === "string") return p.power;
     const reg = this._hass.entities || {};
-    const skip = new Set(["printer", "imprimante", "max", "pro", "plus", "mini", "ethernet", "wifi", "lan", "klipper", "moonraker"]);
+    const skip = new Set(["printer", "imprimante", "drucker", "max", "pro", "plus", "mini", "ethernet", "wifi", "lan", "klipper", "moonraker"]);
     const words = slug(p.name).split("_").filter((w) => w.length >= 3 && !/^\d+$/.test(w) && !skip.has(w));
     if (!words.length) return null;
     const mine = new Set(p.links || [p.id]);
