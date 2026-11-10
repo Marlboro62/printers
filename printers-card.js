@@ -99,7 +99,7 @@ const I18N = {
     eta: "Finishes", res_cancelled: "Cancelled", res_error: "Stopped", res_complete: "Finished", layer: "Layer",
     filament: "Filament", speed: "Speed", u_day: "d",
     camera: "Camera", camera_alt: "Printer camera", temps: "Temperatures", nozzle: "Nozzle", bed: "Bed",
-    chamber: "Chamber", target: "Target {t} °C", cooling: "Cooling down", heater_off: "Off", heating: "heating {p} %",
+    chamber: "Chamber", target: "Target {t} °C", cooling: "Cooling down", heater_off: "Off", heating: "Heating {p} %",
     host: "Host", board: "Board", fan: "Fan",
     controls: "Controls", confirm_q: "Confirm?", click_again: "{label}: click again to confirm",
     power_on: "Turn on", power_on_title: "Turn the printer on", power_off: "Turn off", power_off_title: "Turn the printer off",
