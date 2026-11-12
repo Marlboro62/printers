@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.6.0";
+const CARD_VERSION = "0.6.1";
 
 /** Patch the existing tree so sensor updates do not discard WebView scroll anchors,
  * focused controls, or the live camera. No scrolling or focus restoration is needed. */

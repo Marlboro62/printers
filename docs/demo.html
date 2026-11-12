@@ -151,12 +151,14 @@
       static get observedAttributes() { return ["icon"]; }
       connectedCallback() { this._draw(); }
       attributeChangedCallback() { this._draw(); }
+      // Comme dans Home Assistant : l'icône est dessinée dans le shadow DOM, les attributs de l'élément ne sont pas touchés
       _draw() {
+        if (!this.shadowRoot) {
+          this.attachShadow({ mode: "open" }).innerHTML = `<style>:host{display:inline-block;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);flex:none}` +
+            `span{display:block;width:100%;height:100%;background:currentColor;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat}</style><span></span>`;
+        }
         const name = (this.getAttribute("icon") || "").replace(/^mdi:/, "");
-        if (!name) return;
-        const url = `https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/${name}.svg`;
-        this.style.cssText += `;display:inline-block;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);flex:none;` +
-          `background:currentColor;-webkit-mask:url(${url}) center/contain no-repeat;mask:url(${url}) center/contain no-repeat;`;
+        this.shadowRoot.querySelector("span").style.setProperty("--i", name ? `url(https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/${name}.svg)` : "none");
       }
     });
   }
