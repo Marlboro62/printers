@@ -16,6 +16,61 @@
 (() => {
 const CARD_VERSION = "0.6.0";
 
+/** Patch the existing tree so sensor updates do not discard WebView scroll anchors,
+ * focused controls, or the live camera. No scrolling or focus restoration is needed. */
+function updateCard(root, html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const cameraSlot = (node) => node.nodeType === 1 &&
+    (node.classList.contains("pc-cam-slot") || node.classList.contains("pc-cam"));
+  const same = (a, b) => {
+    if (cameraSlot(a) && cameraSlot(b)) return true;
+    if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) return false;
+    if (a.nodeType !== 1) return true;
+    // The first class identifies a component; subsequent classes describe its state.
+    return (a.localName === "ha-card" ||
+      (a.getAttribute("class") || "").split(/\s+/)[0] === (b.getAttribute("class") || "").split(/\s+/)[0]) &&
+      ["data-entity", "data-tab", "data-press", "data-power", "data-toggle"].every(
+        (key) => a.getAttribute(key) === b.getAttribute(key));
+  };
+  const patch = (parent, next) => {
+    let current = parent.firstChild;
+    for (const wanted of Array.from(next.childNodes)) {
+      let match = current;
+      while (match && !same(match, wanted)) match = match.nextSibling;
+      if (!match) {
+        parent.insertBefore(wanted, current);
+        continue;
+      }
+      // Remove obsolete siblings rather than detach/reinsert an existing anchor.
+      while (current !== match) {
+        const obsolete = current;
+        current = current.nextSibling;
+        obsolete.remove();
+      }
+      if (match.nodeType === 1) {
+        // _camMount owns this image, its URL, and retry handler.
+        if (!cameraSlot(wanted)) {
+          for (const attr of Array.from(match.attributes)) {
+            if (!wanted.hasAttribute(attr.name)) match.removeAttribute(attr.name);
+          }
+          for (const attr of Array.from(wanted.attributes)) {
+            if (match.getAttribute(attr.name) !== attr.value) match.setAttribute(attr.name, attr.value);
+          }
+          patch(match, wanted);
+        }
+      } else if (match.nodeValue !== wanted.nodeValue) match.nodeValue = wanted.nodeValue;
+      current = match.nextSibling;
+    }
+    while (current) {
+      const obsolete = current;
+      current = current.nextSibling;
+      obsolete.remove();
+    }
+  };
+  patch(root, template.content);
+}
+
 /* ------------------------------------------------------------- langues */
 
 /**
@@ -459,11 +514,16 @@ class PrintersCard extends HTMLElement {
 
   /** Place la caméra (élément gardé d'un rendu à l'autre) dans son emplacement. */
   _camMount(camId) {
-    const slot = this.shadowRoot.querySelector(".pc-cam-slot");
+    let slot = this.shadowRoot.querySelector(".pc-cam-slot, .pc-cam");
     if (!slot || !this.isConnected) { this._camStop(); return; }
     const mode = this._config.camera_mode === "snapshot" ? "snapshot" : "live";
     const key = `${camId}|${mode}`;
     if (this._camKey !== key) {
+      if (slot === this._camEl) {
+        const placeholder = document.createElement("div");
+        slot.replaceWith(placeholder);
+        slot = placeholder;
+      }
       this._camStop();
       const img = document.createElement("img");
       img.className = "pc-cam";
@@ -473,7 +533,7 @@ class PrintersCard extends HTMLElement {
       this._camEl = img; this._camKey = key; this._camId = camId; this._camMode = mode;
       this._camLoad();
     }
-    slot.replaceWith(this._camEl);
+    if (slot !== this._camEl) slot.replaceWith(this._camEl);
   }
 
   _refresh() {
@@ -852,11 +912,11 @@ class PrintersCard extends HTMLElement {
     }
 
     const alert = statuses.includes("error");
-    this.shadowRoot.innerHTML = `${STYLE}<ha-card class="${themeClass(c.theme, this._hass)} ${alert ? "pc-alert" : ""}">
+    updateCard(this.shadowRoot, `${STYLE}<ha-card class="${themeClass(c.theme, this._hass)} ${alert ? "pc-alert" : ""}">
       <header><div class="brand"><ha-icon class="pc-icon" icon="${esc(c.icon || "mdi:printer-3d")}" style="color:${esc(c.icon_color || "var(--med-accent, var(--med-blue))")}"></ha-icon>
         <div><div class="title">${esc(title)}</div><div class="sub">${esc(sub)}</div></div></div></header>
       ${body}
-    </ha-card>`;
+    </ha-card>`);
     if (camShown) this._camMount(camShown);
     else this._camStop();
   }
@@ -1361,11 +1421,11 @@ class PrintersOfficeCard extends HTMLElement {
     }
 
     const alert = infos.some((x) => x.st.cls === "bad");
-    this.shadowRoot.innerHTML = `${STYLE}${OFFICE_STYLE}<ha-card class="${themeClass(c.theme, this._hass)} ${alert ? "pc-alert" : ""}">
+    updateCard(this.shadowRoot, `${STYLE}${OFFICE_STYLE}<ha-card class="${themeClass(c.theme, this._hass)} ${alert ? "pc-alert" : ""}">
       <header><div class="brand"><ha-icon class="pc-icon" icon="${esc(c.icon || "mdi:printer")}" style="color:${esc(c.icon_color || "var(--med-accent, var(--med-blue))")}"></ha-icon>
         <div><div class="title">${esc(title)}</div><div class="sub">${esc(sub)}</div></div></div></header>
       ${body}
-    </ha-card>`;
+    </ha-card>`);
   }
 }
 
