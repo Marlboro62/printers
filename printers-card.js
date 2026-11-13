@@ -1010,7 +1010,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-h { display: flex; align-items: center; gap: 6px; font-size: .86rem; font-weight: 600; margin: 0 2px 8px; }
 .pc-h ha-icon { --mdc-icon-size: 18px; color: var(--med-accent, var(--med-blue)); }
 .pc-state { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--med-line); background: var(--med-surface); cursor: pointer; }
-.pc-state ha-icon { --mdc-icon-size: 26px; color: var(--med-muted); flex: none; }
+.pc-state ha-icon { --mdc-icon-size: 26px; color: var(--pc-icon, var(--med-muted)); flex: none; }
 .pc-state div { display: grid; min-width: 0; }
 .pc-state b { font-size: .95rem; }
 .pc-state span { font-size: .76rem; color: var(--med-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1021,7 +1021,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-state.bad { border-color: var(--t-red); background: color-mix(in srgb, var(--t-red) 12%, var(--med-surface)); } .pc-state.bad ha-icon, .pc-state.bad b { color: var(--t-red); }
 .pc-job { display: flex; gap: 12px; padding: 10px; border-radius: 12px; border: 1px solid var(--med-line); background: var(--med-surface); cursor: pointer; }
 .pc-thumb { width: 92px; height: 92px; border-radius: 10px; object-fit: contain; background: color-mix(in srgb, var(--med-text) 6%, transparent); flex: none; }
-.pc-thumb.none { display: flex; align-items: center; justify-content: center; } .pc-thumb.none ha-icon { --mdc-icon-size: 40px; color: var(--med-muted); }
+.pc-thumb.none { display: flex; align-items: center; justify-content: center; } .pc-thumb.none ha-icon { --mdc-icon-size: 40px; color: var(--pc-icon, var(--med-muted)); }
 .pc-jb { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: start; }
 .pc-file { font-weight: 700; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-prog { display: flex; align-items: center; gap: 8px; }
@@ -1038,7 +1038,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .pc-t { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--med-line); background: var(--med-surface); cursor: pointer; }
 .pc-tt { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .82rem; }
 .pc-tt span { display: inline-flex; align-items: center; gap: 6px; color: var(--med-muted); }
-.pc-tt ha-icon { --mdc-icon-size: 18px; color: var(--med-muted); }
+.pc-tt ha-icon { --mdc-icon-size: 18px; color: var(--pc-icon, var(--med-muted)); }
 .pc-t.hot .pc-tt ha-icon { color: var(--pc-hot); }
 .pc-tt b { font-size: 1.15rem; } .pc-tt small { font-size: .74rem; color: var(--med-muted); font-weight: 500; }
 .pc-tbar { height: 6px; border-radius: 6px; background: var(--med-line); margin: 8px 0 4px; overflow: hidden; }
@@ -1077,10 +1077,26 @@ ha-card.th-ha {
   --med-surface: color-mix(in srgb, var(--primary-text-color, #000) 5%, transparent);
   --med-line: var(--divider-color, rgba(127, 127, 127, .25));
   --med-text: var(--primary-text-color, #1f2937); --med-muted: var(--secondary-text-color, #6b7280);
-  border-radius: var(--ha-card-border-radius, 12px);
-  border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+  /* couleurs d'état et icônes : variables sémantiques de Home Assistant, valeurs par défaut de HA en repli */
+  --med-down: var(--success-color, #43a047); --pc-warn: var(--warning-color, #ffa600); --t-red: var(--error-color, #db4437);
+  --pc-hot: var(--state-climate-heat-color, #ff6f22); --pc-light: var(--state-light-active-color, #ffc107);
+  --pc-icon: var(--state-icon-color, #44739e);
+  /* barres unies : le dégradé vers le vert devient la couleur d'accent seule */
+  --med-green: var(--med-accent);
+  background: var(--ha-card-background, var(--card-background-color, #fff));
+  box-shadow: var(--ha-card-box-shadow, none);
+  border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px));
+  border-width: var(--ha-card-border-width, 1px);
+  border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
 }
-ha-card.th-ha.light, ha-card.th-v2.light { --med-down: #1d8a4b; --med-green: #4c8a0b; --pc-warn: #b0640a; --pc-light: #8a6500; --t-red: #c62f2f; }
+/* en clair, l'orange et l'ambre de HA sont illisibles en texte sur fond blanc : même teinte, assombrie */
+ha-card.th-ha.light { --pc-warn: color-mix(in srgb, var(--warning-color, #ffa600) 62%, #000); --pc-light: color-mix(in srgb, var(--state-light-active-color, #ffc107) 62%, #000); }
+ha-card.th-ha.pc-alert { border-color: var(--t-red); }
+ha-card.th-ha header { padding: 16px 16px 8px; }
+ha-card.th-ha .title { color: var(--ha-card-header-color, var(--primary-text-color)); font-family: var(--ha-card-header-font-family, inherit);
+  font-weight: var(--ha-font-weight-medium, 500); }
+ha-card.th-ha .pc-tbar i { background: var(--pc-hot); }
+ha-card.th-v2.light { --med-down: #1d8a4b; --med-green: #4c8a0b; --pc-warn: #b0640a; --pc-light: #8a6500; --t-red: #c62f2f; }
 ha-card.th-v2.light { --med-bg: #ffffff; --med-surface: #f2f5f9; --med-line: #dbe2ec; --med-text: #1a2434; --med-muted: #5b6b82; --med-blue: #1673b8;
   box-shadow: 0 1px 3px rgba(26, 36, 52, .08); }
 @media (prefers-reduced-motion: reduce) { .pc-btn.armed { animation: none; } }
@@ -1472,7 +1488,7 @@ const OFFICE_STYLE = `<style>
 .po-parts { display: grid; gap: 6px; }
 .po-part { display: grid; grid-template-columns: 20px minmax(90px, 1fr) 2fr auto; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px;
   border: 1px solid var(--med-line); background: var(--med-surface); cursor: pointer; font-size: .8rem; }
-.po-part ha-icon { --mdc-icon-size: 18px; color: var(--med-muted); }
+.po-part ha-icon { --mdc-icon-size: 18px; color: var(--pc-icon, var(--med-muted)); }
 .po-part.low { border-color: var(--pc-warn); } .po-part.low ha-icon { color: var(--pc-warn); }
 .po-part .pc-bar { height: 7px; }
 .po-part b { min-width: 42px; text-align: right; }
