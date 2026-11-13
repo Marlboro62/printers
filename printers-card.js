@@ -71,6 +71,23 @@ function updateCard(root, html) {
   patch(root, template.content);
 }
 
+// Normalize each entity independently: number targets and sensors can use different units.
+function temperatureC(state) {
+  const raw = state?.state;
+  if (raw === undefined || raw === null || String(raw).trim() === "") return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  switch (state.attributes?.unit_of_measurement) {
+    case "°F": return (value - 32) * 5 / 9;
+    case "K": return value - 273.15;
+    case "°C": return value;
+    // Legacy integrations sometimes omit units on known nozzle/bed entities.
+    case undefined: case null: case "": return value;
+    default: return null;
+  }
+}
+const displayTemperature = (value, unit) => unit === "fahrenheit" ? value * 9 / 5 + 32 : value;
+
 /* ------------------------------------------------------------- langues */
 
 /**
@@ -98,7 +115,7 @@ const I18N = {
     filament: "Filament", speed: "Vitesse", u_day: "j",
     // caméra et températures
     camera: "Caméra", camera_alt: "Caméra de l'imprimante", temps: "Températures", nozzle: "Buse", bed: "Plateau",
-    chamber: "Caisson", target: "Consigne {t} °C", cooling: "Refroidissement", heater_off: "Arrêt", heating: "chauffe {p} %",
+    chamber: "Caisson", target: "Consigne {t} {unit}", cooling: "Refroidissement", heater_off: "Arrêt", heating: "chauffe {p} %",
     host: "Hôte", board: "Carte", fan: "Ventilateur",
     // commandes
     controls: "Commandes", confirm_q: "Confirmer ?", click_again: "{label} : cliquez encore pour confirmer",
@@ -126,7 +143,7 @@ const I18N = {
     ed_icon: "Icône", ed_icon_color: "Couleur de l'icône", ed_printers: "Imprimantes affichées, dans cet ordre (vide = toutes)",
     ed_camera: "Caméra (vide = celle de l'imprimante)", ed_camera_mode: "Affichage de la caméra",
     ed_camera_refresh: "Rafraîchissement en mode image par image", ed_show_job: "Impression en cours", ed_show_camera: "Caméra",
-    ed_show_temps: "Températures", ed_show_controls: "Commandes (pause, reprise, annulation, arrêt d'urgence, lumières)",
+    ed_temperature_unit: "Unité de température", ed_show_temps: "Températures", ed_show_controls: "Commandes (pause, reprise, annulation, arrêt d'urgence, lumières)",
     ed_show_stats: "Statistiques", ed_show_device: "Appareil (adresse IP, micrologiciel, mises à jour)", ed_theme: "Couleurs de la carte",
     ed_low_level: "Alerte quand l'encre ou le toner descend sous", ed_show_supplies: "Encre et toner",
     ed_supplies_sort: "Ordre des cartouches", ed_show_parts: "Pièces d'usure (tambour, unité de fixation…)",
@@ -154,7 +171,7 @@ const I18N = {
     eta: "Finishes", res_cancelled: "Cancelled", res_error: "Stopped", res_complete: "Finished", layer: "Layer",
     filament: "Filament", speed: "Speed", u_day: "d",
     camera: "Camera", camera_alt: "Printer camera", temps: "Temperatures", nozzle: "Nozzle", bed: "Bed",
-    chamber: "Chamber", target: "Target {t} °C", cooling: "Cooling down", heater_off: "Off", heating: "Heating {p} %",
+    chamber: "Chamber", target: "Target {t} {unit}", cooling: "Cooling down", heater_off: "Off", heating: "Heating {p} %",
     host: "Host", board: "Board", fan: "Fan",
     controls: "Controls", confirm_q: "Confirm?", click_again: "{label}: click again to confirm",
     power_on: "Turn on", power_on_title: "Turn the printer on", power_off: "Turn off", power_off_title: "Turn the printer off",
@@ -177,7 +194,7 @@ const I18N = {
     ed_icon: "Icon", ed_icon_color: "Icon color", ed_printers: "Printers shown, in this order (empty = all)",
     ed_camera: "Camera (empty = the printer's own)", ed_camera_mode: "Camera display",
     ed_camera_refresh: "Refresh interval in snapshot mode", ed_show_job: "Current print", ed_show_camera: "Camera",
-    ed_show_temps: "Temperatures", ed_show_controls: "Controls (pause, resume, cancel, emergency stop, lights)",
+    ed_temperature_unit: "Temperature unit", ed_show_temps: "Temperatures", ed_show_controls: "Controls (pause, resume, cancel, emergency stop, lights)",
     ed_show_stats: "Statistics", ed_show_device: "Device (IP address, firmware, updates)", ed_theme: "Card colors",
     ed_low_level: "Warn when ink or toner drops below", ed_show_supplies: "Ink and toner",
     ed_supplies_sort: "Cartridge order", ed_show_parts: "Wear parts (drum, fuser…)",
@@ -205,7 +222,7 @@ const I18N = {
     eta: "Fertig um", res_cancelled: "Abgebrochen", res_error: "Gestoppt", res_complete: "Fertig", layer: "Schicht",
     filament: "Filament", speed: "Geschwindigkeit", u_day: "T",
     camera: "Kamera", camera_alt: "Druckerkamera", temps: "Temperaturen", nozzle: "Düse", bed: "Druckbett",
-    chamber: "Bauraum", target: "Soll {t} °C", cooling: "Kühlt ab", heater_off: "Aus", heating: "Heizleistung {p} %",
+    chamber: "Bauraum", target: "Soll {t} {unit}", cooling: "Kühlt ab", heater_off: "Aus", heating: "Heizleistung {p} %",
     host: "Host", board: "Platine", fan: "Lüfter",
     controls: "Steuerung", confirm_q: "Bestätigen?", click_again: "{label}: zum Bestätigen erneut klicken",
     power_on: "Einschalten", power_on_title: "Drucker einschalten", power_off: "Ausschalten", power_off_title: "Drucker ausschalten",
@@ -228,7 +245,7 @@ const I18N = {
     ed_icon: "Symbol", ed_icon_color: "Symbolfarbe", ed_printers: "Angezeigte Drucker, in dieser Reihenfolge (leer = alle)",
     ed_camera: "Kamera (leer = die des Druckers)", ed_camera_mode: "Kameraanzeige",
     ed_camera_refresh: "Aktualisierung im Einzelbildmodus", ed_show_job: "Aktueller Druck", ed_show_camera: "Kamera",
-    ed_show_temps: "Temperaturen", ed_show_controls: "Steuerung (Pause, Fortsetzen, Abbrechen, Not-Aus, Licht)",
+    ed_temperature_unit: "Temperatureinheit", ed_show_temps: "Temperaturen", ed_show_controls: "Steuerung (Pause, Fortsetzen, Abbrechen, Not-Aus, Licht)",
     ed_show_stats: "Statistik", ed_show_device: "Gerät (IP-Adresse, Firmware, Updates)", ed_theme: "Kartenfarben",
     ed_low_level: "Warnen, wenn Tinte oder Toner unter diesen Wert fällt", ed_show_supplies: "Tinte und Toner",
     ed_supplies_sort: "Reihenfolge der Patronen", ed_show_parts: "Verschleißteile (Trommel, Fixiereinheit…)",
@@ -388,6 +405,7 @@ const DEFAULTS = {
   title: "",
   icon: "mdi:printer-3d",
   icon_color: "",
+  temperature_unit: "celsius",
   show_job: true, show_camera: true, show_temps: true, show_controls: true, show_stats: true, show_device: true,
   camera_mode: "live", // live : vidéo en continu ; snapshot : une image toutes les camera_refresh secondes
   camera_refresh: 5, // secondes
@@ -736,7 +754,7 @@ class PrintersCard extends HTMLElement {
     const p = list.find((x) => x.id === this._tab || x.links?.includes(this._tab))
       || list.find((x) => ["printing", "paused", "error"].includes(this._status(x))) || list[0];
     const ids = list.flatMap((x) => [...Object.values(x.roles), ...x.outputs, ...x.others, this._power(x)].filter(Boolean));
-    const sig = `${LOCALE}|${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|${this._armed}|${Math.floor(Date.now() / 30000)}|` + ids.map((id) => this._st(id)?.state ?? "-").join("|");
+    const sig = `${LOCALE}|${c.theme}|${this._hass.themes?.darkMode}|${p?.id}|${this._armed}|${Math.floor(Date.now() / 30000)}|` + ids.map((id) => `${this._st(id)?.state ?? "-"}:${this._st(id)?.attributes?.unit_of_measurement ?? ""}`).join("|");
     if (sig === this._sig) return;
     this._sig = sig;
 
@@ -836,25 +854,28 @@ class PrintersCard extends HTMLElement {
         ? `<div class="pc-sec"><div class="pc-h"><ha-icon icon="mdi:webcam"></ha-icon>${t("camera")}</div><div class="pc-camw" data-entity="${esc(camId)}">
             <div class="pc-cam-slot"></div></div></div>` : "";
 
-      // --- températures
+      // --- températures: use Celsius for thresholds/ratios, selected units only for display.
+      const temperature = (id) => temperatureC(this._st(id));
+      const unit = c.temperature_unit === "fahrenheit" ? "°F" : "°C";
+      const shown = (value) => displayTemperature(value, c.temperature_unit);
       const temp = (cur, tgtNum, tgtSensor, power, icon, label) => {
-        const v = this._num(cur);
+        const v = temperature(cur);
         if (v === null) return "";
-        const tg = this._num(tgtNum) ?? this._num(tgtSensor);
+        const tg = temperature(tgtNum) ?? temperature(tgtSensor);
         const pw = this._num(power);
         const heating = tg !== null && tg > 0;
         const pct = heating ? Math.max(0, Math.min(100, (v / tg) * 100)) : 0;
         return `<div class="pc-t ${heating ? "hot" : ""}" data-entity="${esc(cur)}">
-          <div class="pc-tt"><span><ha-icon icon="${icon}"></ha-icon>${label}</span><b>${fmt(v, v < 100 ? 1 : 0)}<small> °C</small></b></div>
+          <div class="pc-tt"><span><ha-icon icon="${icon}"></ha-icon>${label}</span><b>${fmt(shown(v), shown(v) < 100 ? 1 : 0)}<small> ${unit}</small></b></div>
           <div class="pc-tbar"><i style="width:${pct}%"></i></div>
-          <div class="pc-tn">${heating ? t("target", { t: fmt(tg) }) : v >= 45 ? t("cooling") : t("heater_off")}${pw !== null && heating ? ` · ${t("heating", { p: fmt(pw) })}` : ""}</div></div>`;
+          <div class="pc-tn">${heating ? t("target", { t: fmt(shown(tg)), unit }) : v >= 45 ? t("cooling") : t("heater_off")}${pw !== null && heating ? ` · ${t("heating", { p: fmt(pw) })}` : ""}</div></div>`;
       };
-      const extra = p.others.filter((id) => this._st(id)?.attributes?.unit_of_measurement === "°C" && ![r.ext, r.bed, r.chamber].includes(id)).map((id) => {
-        const v = this._num(id);
+      const extra = p.others.filter((id) => ["°C", "°F", "K"].includes(this._st(id)?.attributes?.unit_of_measurement) && ![r.ext, r.bed, r.chamber].includes(id)).map((id) => {
+        const v = temperature(id);
         if (v === null) return "";
         const raw = id.split(".")[1].replace(/^.*?_(?=[a-z0-9]+_temp(erature)?$)/, "").replace(/_temp(erature)?$/, "");
         const label = /rockchip|host|rpi|raspberry|cb\d/i.test(raw) ? t("host") : /mcu|stm32|board|carte/i.test(raw) ? t("board") : raw.replace(/_/g, " ");
-        return `<span class="pc-x" data-entity="${esc(id)}"><ha-icon icon="mdi:thermometer"></ha-icon>${esc(label)} <b>${fmt(v, 0)} °C</b></span>`;
+        return `<span class="pc-x" data-entity="${esc(id)}"><ha-icon icon="mdi:thermometer"></ha-icon>${esc(label)} <b>${fmt(shown(v), 0)} ${unit}</b></span>`;
       }).filter(Boolean);
       const fan = this._num(r.fan);
       const temps = c.show_temps !== false ? [
@@ -1077,6 +1098,9 @@ const SCHEMA = () => [
   { name: "camera_refresh", selector: { number: { min: 2, max: 60, mode: "box", unit_of_measurement: "s" } } },
   { name: "show_job", selector: { boolean: {} } },
   { name: "show_camera", selector: { boolean: {} } },
+  { name: "temperature_unit", selector: { select: { mode: "dropdown", options: [
+    { value: "celsius", label: "Celsius (°C)" },
+    { value: "fahrenheit", label: "Fahrenheit (°F)" }] } } },
   { name: "show_temps", selector: { boolean: {} } },
   { name: "show_controls", selector: { boolean: {} } },
   { name: "show_stats", selector: { boolean: {} } },

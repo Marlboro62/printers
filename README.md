@@ -212,3 +212,20 @@ La licence MIT autorise à copier, modifier et redistribuer le code. Si vous pub
 
 Une correction ou une idée ? Les **pull requests** et les **issues** sont les bienvenues ici :
 elles profitent à tous les utilisateurs.
+
+## Card temperature units
+
+The 3D card defaults to Celsius independently of Home Assistant's unit preference.
+Choose Temperature unit in the visual editor, or set:
+
+```yaml
+type: custom:printers-card
+temperature_unit: celsius
+```
+
+Use `fahrenheit` to display Fahrenheit instead. Each current/target/auxiliary
+temperature is converted from its own entity `unit_of_measurement` (°C, °F or K).
+The card only changes its display, not entity settings or printer commands.
+For legacy integrations, recognized nozzle/bed/chamber/target entities without
+a unit retain the prior Celsius assumption. Unsupported explicit units are not
+relabeled as temperatures. Auxiliary temperatures must have a recognized unit.
