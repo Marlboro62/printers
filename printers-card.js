@@ -14,7 +14,7 @@
  */
 
 (() => {
-const CARD_VERSION = "0.6.1";
+const CARD_VERSION = "0.7.0";
 
 /** Patch the existing tree so sensor updates do not discard WebView scroll anchors,
  * focused controls, or the live camera. No scrolling or focus restoration is needed. */
@@ -148,7 +148,7 @@ const I18N = {
     ed_low_level: "Alerte quand l'encre ou le toner descend sous", ed_show_supplies: "Encre et toner",
     ed_supplies_sort: "Ordre des cartouches", ed_show_parts: "Pièces d'usure (tambour, unité de fixation…)",
     ed_show_counters: "Compteurs de pages",
-    opt_live: "Vidéo en direct", opt_snapshot: "Image par image (moins de réseau)", opt_v2: "Style MyElectricalData (bleu nuit)",
+    opt_unit_auto: "Comme Home Assistant", opt_live: "Vidéo en direct", opt_snapshot: "Image par image (moins de réseau)", opt_v2: "Style MyElectricalData (bleu nuit)",
     opt_auto: "Style MyElectricalData, clair ou sombre selon Home Assistant", opt_ha: "Thème Home Assistant (clair ou sombre)",
     opt_sort_color: "Par couleur (noir, cyan, magenta, jaune)", opt_sort_level: "Par niveau, de la plus vide à la plus pleine",
     card_3d_name: "Carte Imprimantes 3D",
@@ -199,7 +199,7 @@ const I18N = {
     ed_low_level: "Warn when ink or toner drops below", ed_show_supplies: "Ink and toner",
     ed_supplies_sort: "Cartridge order", ed_show_parts: "Wear parts (drum, fuser…)",
     ed_show_counters: "Page counters",
-    opt_live: "Live video", opt_snapshot: "Snapshots (less network traffic)", opt_v2: "MyElectricalData style (midnight blue)",
+    opt_unit_auto: "Same as Home Assistant", opt_live: "Live video", opt_snapshot: "Snapshots (less network traffic)", opt_v2: "MyElectricalData style (midnight blue)",
     opt_auto: "MyElectricalData style, light or dark following Home Assistant", opt_ha: "Home Assistant theme (light or dark)",
     opt_sort_color: "By color (black, cyan, magenta, yellow)", opt_sort_level: "By level, emptiest first",
     card_3d_name: "3D printers card",
@@ -250,7 +250,7 @@ const I18N = {
     ed_low_level: "Warnen, wenn Tinte oder Toner unter diesen Wert fällt", ed_show_supplies: "Tinte und Toner",
     ed_supplies_sort: "Reihenfolge der Patronen", ed_show_parts: "Verschleißteile (Trommel, Fixiereinheit…)",
     ed_show_counters: "Seitenzähler",
-    opt_live: "Live-Video", opt_snapshot: "Einzelbilder (weniger Netzwerklast)", opt_v2: "MyElectricalData-Stil (Nachtblau)",
+    opt_unit_auto: "Wie Home Assistant", opt_live: "Live-Video", opt_snapshot: "Einzelbilder (weniger Netzwerklast)", opt_v2: "MyElectricalData-Stil (Nachtblau)",
     opt_auto: "MyElectricalData-Stil, hell oder dunkel wie Home Assistant", opt_ha: "Home-Assistant-Design (hell oder dunkel)",
     opt_sort_color: "Nach Farbe (Schwarz, Cyan, Magenta, Gelb)", opt_sort_level: "Nach Füllstand, leerste zuerst",
     card_3d_name: "3D-Drucker-Karte",
@@ -405,7 +405,7 @@ const DEFAULTS = {
   title: "",
   icon: "mdi:printer-3d",
   icon_color: "",
-  temperature_unit: "celsius",
+  temperature_unit: "auto", // auto : l'unité de Home Assistant ; celsius ou fahrenheit pour l'imposer
   show_job: true, show_camera: true, show_temps: true, show_controls: true, show_stats: true, show_device: true,
   camera_mode: "live", // live : vidéo en continu ; snapshot : une image toutes les camera_refresh secondes
   camera_refresh: 5, // secondes
@@ -856,8 +856,11 @@ class PrintersCard extends HTMLElement {
 
       // --- températures: use Celsius for thresholds/ratios, selected units only for display.
       const temperature = (id) => temperatureC(this._st(id));
-      const unit = c.temperature_unit === "fahrenheit" ? "°F" : "°C";
-      const shown = (value) => displayTemperature(value, c.temperature_unit);
+      // auto (par défaut) : l'unité choisie dans Home Assistant ; celsius ou fahrenheit l'imposent
+      const tUnit = c.temperature_unit === "fahrenheit" || c.temperature_unit === "celsius" ? c.temperature_unit
+        : this._hass.config?.unit_system?.temperature === "°F" ? "fahrenheit" : "celsius";
+      const unit = tUnit === "fahrenheit" ? "°F" : "°C";
+      const shown = (value) => displayTemperature(value, tUnit);
       const temp = (cur, tgtNum, tgtSensor, power, icon, label) => {
         const v = temperature(cur);
         if (v === null) return "";
@@ -1099,6 +1102,7 @@ const SCHEMA = () => [
   { name: "show_job", selector: { boolean: {} } },
   { name: "show_camera", selector: { boolean: {} } },
   { name: "temperature_unit", selector: { select: { mode: "dropdown", options: [
+    { value: "auto", label: t("opt_unit_auto") },
     { value: "celsius", label: "Celsius (°C)" },
     { value: "fahrenheit", label: "Fahrenheit (°F)" }] } } },
   { name: "show_temps", selector: { boolean: {} } },
