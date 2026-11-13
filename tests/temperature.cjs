@@ -46,4 +46,11 @@ states['sensor.nozzle'] = state(113,'°F'); card.hass = hass;
 assert.match(nozzle().textContent,/Cooling down/);
 states['sensor.nozzle'] = state('unavailable','°F'); card.hass = hass;
 assert.equal(nozzle(),null);
-console.log('PASS: conversions, mixed targets, auxiliary temperatures, unit-only updates, Fahrenheit display, off/cooling thresholds, unavailable states');
+// auto (par défaut) : l'unité de Home Assistant
+states['sensor.nozzle'] = state(392,'°F'); states['number.target'] = state(210,'°C');
+card.setConfig({...card._config, temperature_unit:'auto'});
+hass.config = { unit_system: { temperature: '°F' } }; card._sig = null; card.hass = hass;
+assert.match(nozzle().textContent,/392\s*°F/);
+hass.config = { unit_system: { temperature: '°C' } }; card._sig = null; card.hass = hass;
+assert.match(nozzle().textContent,/200\s*°C/);
+console.log('PASS: auto unit, conversions, mixed targets, auxiliary temperatures, unit-only updates, Fahrenheit display, off/cooling thresholds, unavailable states');
